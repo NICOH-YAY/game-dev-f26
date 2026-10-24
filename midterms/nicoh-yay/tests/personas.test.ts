@@ -11,7 +11,7 @@ function choice(persona:Persona,seed:number,history:CombatAction[]) {
  return result;
 }
 it("personas deterministic from seed and resolved history; ignore forbidden fields",()=>{
- for(const p of ["Aggressor","Sentinel","Opportunist","Adapter"] as const) {
+ for(const p of ["Aggressor","Sentinel","Opportunist","Adapter","Mimic"] as const) {
   const a=new PersonaController(p,42),b=new PersonaController(p,42),g=new Game();g.step(0,"CONTINUE");
   for(let i=0;i<8;i++) {
    g.state.exchange=i;g.state.previous=i?["STRIKE","GUARD"]:null;
@@ -65,4 +65,17 @@ it("separate testimony seed controls evidence independently of duel seed",()=>{
  const a=new Game(),b=new Game();a.reset(1,{testimonySeed:123});b.reset(2,{testimonySeed:123});
  expect(a.state.cards).toEqual(b.state.cards);expect(a.state.guilt).toBe(b.state.guilt);
  expect(a.state.rng.testimony).toBe(b.state.rng.testimony);expect(a.state.rng.tells).not.toBe(b.state.rng.tells);
+});
+
+it("Mimic copies previous resolved action with a .70 mixture over Sentinel",()=>{
+ let copied=0;
+ for(let seed=0;seed<2000;seed++) if(choice("Mimic",seed,["RECOVER"])==="RECOVER") copied++;
+ expect(copied/2000).toBeGreaterThan(.69);
+ expect(copied/2000).toBeLessThan(.76);
+});
+
+it("Mimic unaffordable copied action falls back legally without private reads",()=>{
+ const g=new Game();g.step(0,"CONTINUE");g.state.exchange=1;g.state.previous=["STRIKE","GUARD"];
+ const o=g.observe(1);o.own_stamina=0;
+ for(let seed=0;seed<100;seed++) expect(["GUARD","RECOVER"]).toContain(new PersonaController("Mimic",seed).choose(o,["GUARD","RECOVER"]));
 });

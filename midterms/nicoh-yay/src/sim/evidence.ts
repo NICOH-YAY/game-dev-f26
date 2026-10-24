@@ -21,7 +21,7 @@ export function posterior(cards: Card[], reliability: number[] = cards.map(() =>
   return { numerator: g / d, denominator: (g + i) / d };
 }
 export type Evidence =
-  "ambiguous" | "strong innocence" | "strong guilt" | "conflicting";
+  "ambiguous" | "strong innocence" | "strong guilt" | "conflicting" | "reliable accusation + unreliable clearance";
 export function evidence(
   state: number,
   setting?: Evidence,
@@ -30,7 +30,7 @@ export function evidence(
   [state, n] = draw(state);
   const guilt = n < 2147483648;
   const cards: Card[] = [];
-  const reliability = setting === "ambiguous" ? [0.55,0.55] : setting === "conflicting" ? [0.9,0.9] : [0.8,0.8];
+  const reliability = setting === "reliable accusation + unreliable clearance" ? [0.9,0.55] : setting === "ambiguous" ? [0.55,0.55] : setting === "conflicting" ? [0.9,0.9] : [0.8,0.8];
   for (let k = 0; k < 2; k++) {
     [state, n] = draw(state);
     cards.push(
@@ -46,6 +46,8 @@ export function evidence(
         ? (["clear", "clear"] as Card[])
         : setting === "strong guilt"
           ? (["accuse", "accuse"] as Card[])
+          : setting === "reliable accusation + unreliable clearance"
+            ? (["accuse", "clear"] as Card[])
           : setting === "conflicting"
             ? (["clear", "accuse"] as Card[])
             : (["accuse", "accuse"] as Card[])),

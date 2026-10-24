@@ -17,7 +17,7 @@ import {
 } from "./sim/evidence.js";
 export type Player = 0 | 1;
 export type Phase = "HEARING" | "DUEL" | "JUDGMENT" | "EPILOGUE";
-export type Persona = "Aggressor" | "Sentinel" | "Opportunist" | "Adapter";
+export type Persona = "Aggressor" | "Sentinel" | "Opportunist" | "Adapter" | "Mimic";
 export type Reason =
   | "ko"
   | "double_ko_draw"

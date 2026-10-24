@@ -1,3 +1,15 @@
+# Current implementation-pass validation (2026-10-24)
+
+- `npm test`: PASS, 84 tests in 9 files, including actual npm/Node CLI, posterior aggregation, config validation, Mimic synthetic policy/hidden-read tests, and unused-X2-seed scan.
+- `npm run typecheck`: PASS.
+- `npm run balance`: completed 3,520 offline episodes per run. Criterion (a) FAIL (S2/Sentinel 11/20 baseline < 20/20 always-BASH); criterion (b) PASS. Exit 1 is an unmet design criterion; execution succeeded. See EVALUATION.md and latest linked matrix for current source identity.
+- Development reruns during this pass finalized config/provenance; all use S1/S2/S3/X1 only and retain the same balance counts. No combat values or legacy persona policies were tuned.
+- Red-before-green: posterior regression failed with first-episode 1/4 rather than mean .5; Mimic repeat test failed at .0935 rather than >.69; runtime config test failed before module existed. All pass now. The historical situation identity test was extended to declare X2 without executing it.
+- X2 never ran (including baselines); no reserved seeds used. No live model calls, cloud spend, hosted CI, commit, push or approval.
+- Independent review of this pass is pending in a different session.
+
+## Historical validation records
+
 Current run: see [BALANCE-FINAL.md](BALANCE-FINAL.md): 77 passed, 6 balance acceptance failures, typecheck passed, 3520 offline evaluation episodes completed. Results below are historical.
 
 # Approved footing revision validation ? 2026-10-24

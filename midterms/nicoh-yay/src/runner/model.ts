@@ -1,3 +1,4 @@
+import { runtime } from "./config.js";
 export type ModelReply = { text: string; tok_in: number; tok_out: number };
 export interface ModelController {
   readonly kind: "model";
@@ -31,8 +32,9 @@ export class VertexGemini implements ModelController {
   private location: string;
   constructor(live: boolean) {
     if (!live) throw new Error("Vertex requires explicit --live");
-    const { GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, COURSE_MODEL } =
-      process.env;
+    const GOOGLE_CLOUD_PROJECT = process.env[runtime.project_env],
+      GOOGLE_CLOUD_LOCATION = process.env[runtime.location_env],
+      COURSE_MODEL = process.env[runtime.model_env];
     if (!GOOGLE_CLOUD_PROJECT || !GOOGLE_CLOUD_LOCATION || !COURSE_MODEL)
       throw new Error(
         "Set GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, COURSE_MODEL and authenticate ADC",
@@ -54,7 +56,7 @@ export class VertexGemini implements ModelController {
       config: {
         temperature: 0,
         responseMimeType: "application/json",
-        httpOptions: { timeout: 20000 },
+        httpOptions: { timeout: runtime.timeout_ms },
         abortSignal: signal,
       },
     });

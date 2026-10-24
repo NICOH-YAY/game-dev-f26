@@ -1,30 +1,28 @@
-# Trial by Combat rule/source map
+# Rule/source map
 
-All rows carry `design`; this is an original game, not evidence from a classic.
-Locators name headings and exported symbols so line shifts do not invalidate them.
+All evidence labels are `design`: an original game. Spec headings refer to [DESIGN.md](DESIGN.md); later superseding sections govern. Parameterized test names use their source template.
 
-| Rule | Evidence and design locator | Implementation | Tests |
-|---|---|---|---|
-| HEARING ? DUEL ? JUDGMENT ? EPILOGUE; acknowledgment advances hearing | design: DESIGN.md, Loop | src/game.ts: step | tests/game.test.ts |
-| HP 12, stamina 3, cap 3, 18 exchanges; S2 handicap default 9 HP | design: DESIGN.md, Combat / Declared suite; numeric handicap unspecified, proposed default | src/sim/rules.ts; src/game.ts: reset | tests/game.test.ts |
-| All 25 simultaneous payoffs, resource bounds, zero stamina restriction | design: DESIGN.md, Combat | src/sim/rules.ts: resolvePair | tests/game.test.ts |
-| KO, double KO, time up, draw | design: DESIGN.md, Combat | src/game.ts: resolve | tests/game.test.ts |
-| Only own resources determine legal actions; illegal requests leave state unchanged | design: DESIGN.md, Information boundary | src/game.ts: observe, legalActions, step | tests/game.test.ts |
-| Five-action noisy tells (approved 2026-10-24) | design: DESIGN.md, Combat; opponent commits first; pending tell before player choice (design decision, review finding 1) | src/sim/rules.ts: TELL_TABLE; src/game.ts: step, observe | tests/tells.test.ts |
-| Two testimony cards, published reliability, exact posterior | design: DESIGN.md, Loop / Players; proposed table in IMPLEMENTATION.md | src/sim/evidence.ts | tests/game.test.ts |
-| Release/detain; winner binding; loss/draw counsel and court DETAIN; ledger only outcome | design: DESIGN.md, Judgment stakes | src/game.ts: judgment | tests/game.test.ts |
-| Separate testimony, tells, persona streams; deterministic serializable state | design: DESIGN.md, Combat / Players | src/sim/random.ts | tests/game.test.ts |
-| Timeout 20s, reask once, cap 30, GUARD/abstain fallbacks, third fallback forfeits | design: DESIGN.md, Runner limits | src/runner/episode.ts | tests/runner.test.ts |
-| Floors, expectimax depth 3 with pooled global-plus-local habit prior, pending-tell Bayes and time-up leaves, posterior and weighted judgments, four personas | design: DESIGN.md, Players | src/agents/index.ts | tests/agents.test.ts |
-| S1/S2/S3/X1 situations and held-out Adapter | design: DESIGN.md, Declared suite; seeds proposed in IMPLEMENTATION.md | experiments/suite.json | tests/runner.test.ts |
-
-| Parry drains extra stamina; SIDESTEP costs 1, evades attacks and overextends STRIKE | design: Nicoh approval 2026-10-24; discourage always-strike | src/sim/rules.ts: resolvePair, combatLegal | tests/footing.test.ts |
-| Clash point 0..6 starts 3; damaging strikes and unbeaten bashes push; trades cancel; corner bash +1 and recover +1 only | design: Nicoh approval 2026-10-24; spatial choreography and corner escape | src/sim/rules.ts: resolvePair; src/game.ts: observe | tests/footing.test.ts |
-| Public footing, corner flags, witness reliabilities; S1 mild accusations versus X1 high reliability conflict | design: Nicoh approval 2026-10-24; distinct evidence and public spatial decisions | src/game.ts; src/sim/evidence.ts | tests/footing.test.ts |
-
-| Player prompt describes approved combat and pending tells | design: DESIGN.md Combat; avoid stale instructions to player controllers | src/runner/prompt.ts | tests/footing.test.ts |
-
-| Reactive personas remember only resolved champion actions (windows 3/6), public HP/footing and own resources | design: Nicoh approval 2026-10-24; learnable habits counter repetition without hidden information | src/agents/index.ts: PersonaController | tests/personas.test.ts |
-| Distinct situation duel ranges; separate testimony seed stream | design: Nicoh approval 2026-10-24; avoid duplicate duels across situations while pairing arms | experiments/suite.json; src/runner/cli.ts; src/game.ts: reset | tests/personas.test.ts |
-
-| GUARD blocking STRIKE deals 1 riposte damage to striker in addition to existing parry stamina loss; no riposte push | design: Nicoh, Creative Director, 2026-10-24; make successful defense punish repeated strikes without changing other numbers | src/sim/rules.ts: resolvePair | tests/footing.test.ts; tests/game.test.ts |
+| Rule id | Evidence label | Spec locator | Rationale (including rejected alternative) | Implementation symbol | Test locator |
+|---|---|---|---|---|---|
+| R01 | design | DESIGN.md: Loop | Explicit phases preserve judgment after combat; reject combat-only loop | src/game.ts:Game.step | tests/game.test.ts:phase legality, pending submissions and rejected requests are immutable |
+| R02 | design | DESIGN.md: Combat | Bounded HP/stamina and 18 exchanges permit finite trials; reject unbounded duel | src/game.ts:Game.reset | tests/game.test.ts:all 16 payoffs, symmetry and integer resource bounds |
+| R03 | design | DESIGN.md: Combat | Simultaneous payoffs allow lethal trades; reject first-strike ordering | src/sim/rules.ts:resolvePair | tests/footing.test.ts:${a}/${b} payoff, stamina and pushes |
+| R04 | design | DESIGN.md: Combat | KO and HP time-up terminate deterministically; reject random tiebreak | src/game.ts:Game.resolve | tests/game.test.ts:same seed and actions reproduce entire state and golden trace |
+| R05 | design | DESIGN.md: Information boundary | Only player knowledge is exposed and refused steps preserve state; reject private-state controllers | src/game.ts:Game.observe, Game.legalActions, Game.step | tests/game.test.ts:hidden-field non-interference across 1000 generated states |
+| R06 | design | DESIGN.md: Review correction: committed-action tells (design) | Pending noisy signal informs choice; reject tells of already revealed actions | src/game.ts:Game.step; src/sim/rules.ts:TELL_TABLE | tests/tells.test.ts:review regression: pending tell exists before player chooses; early commit immutable |
+| R07 | design | DESIGN.md: Judgment stakes (both sides cost something) | Independent likelihood posterior keeps risk separate from luck; reject arbitrary honor score | src/sim/evidence.ts:posterior, evidence | tests/game.test.ts:posterior uses exact independent likelihood products |
+| R08 | design | DESIGN.md: Loop | Win grants binding judgment and losses counsel; reject pretending loser controls verdict | src/game.ts:Game.judgment | tests/game.test.ts:binding vs counsel and all realized ledger fields |
+| R09 | design | DESIGN.md: Approved reactive personas and seed separation (Nicoh, 2026-10-24; design) | Independent named streams avoid duplicate duels; reject shared situation seeds | src/sim/random.ts:streams; src/game.ts:Game.reset | tests/personas.test.ts:separate testimony seed controls evidence independently of duel seed |
+| R10 | design | DESIGN.md: Runner limits | Capped calls and logged fallbacks bound failures; reject unlimited retries | src/runner/episode.ts:runEpisode | tests/runner.test.ts:cap 30 counts reasks and terminates before call 31 |
+| R11 | design | DESIGN.md: Online baseline revision | Pooled context learning retains marginal evidence; reject sparse context-only prior | src/agents/index.ts:Expectimax.choose | tests/agents.test.ts:all controllers return legal proposals from observations only |
+| R12 | design | DESIGN.md: Declared suite (freeze before tuning) | Paired disjoint cells support comparisons; reject unpaired random sampling | src/runner/cli.ts:main | tests/personas.test.ts:situation duel seeds are disjoint and testimony seeds separate |
+| R13 | design | DESIGN.md: Combat | Parry and sidestep punish repeated strikes; reject costless evasion | src/sim/rules.ts:resolvePair, combatLegal | tests/footing.test.ts:${a}/${b} payoff, stamina and pushes |
+| R14 | design | DESIGN.md: Combat | Footing adds corner escape decisions; reject stationary damage race | src/sim/rules.ts:resolvePair | tests/footing.test.ts:corner wall slam, restricted recovery, escape, clamp and trade cancellation |
+| R15 | design | DESIGN.md: Information boundary | Public corners and reliabilities support fair decisions; reject hidden payoff-relevant footing | src/game.ts:Game.observe | tests/footing.test.ts:sidestep legality and public absolute position / relative corners |
+| R16 | design | DESIGN.md: Combat | Prompt matches current rules; reject stale instructions | src/runner/prompt.ts:buildPrompt | tests/footing.test.ts:player prompt publishes the approved actions and pending tell timing |
+| R17 | design | DESIGN.md: Approved reactive personas and seed separation (Nicoh, 2026-10-24; design) | Resolved-action reactivity counters repetition fairly; reject hidden committed-action reads | src/agents/index.ts:PersonaController.choose | tests/personas.test.ts:personas deterministic from seed and resolved history; ignore forbidden fields |
+| R18 | design | DESIGN.md: Approved riposte and learning correction (Nicoh, 2026-10-24) | Riposte punishes strikes without push; reject harmless permanent guard | src/sim/rules.ts:resolvePair | tests/footing.test.ts:riposte can KO the striker without moving footing; refused strike remains immutable |
+| R19 | design | DESIGN.md: Final-only X2 preregistration (2026-10-24) | Fresh Mimic/evidence case restores final integrity; reject reusing observed X1 as clean | src/agents/index.ts:PersonaController.choose; src/sim/evidence.ts:evidence; src/runner/cli.ts:main | tests/audit.test.ts:X2 reserved seeds have never appeared in any existing results file |
+| R20 | design | DESIGN.md: Reporting provenance and runtime configuration | Aggregate all posterior values with provenance; reject first-episode proxy | src/runner/report.ts:comparison | tests/audit.test.ts:posterior report averages all episodes and retains exact episode values |
+| R21 | design | DESIGN.md: Reporting provenance and runtime configuration | Load validated runtime settings once; reject drifting duplicate constants | src/runner/config.ts:validateRuntime | tests/audit.test.ts:runtime config is validated and loaded from agent-config |
+| R22 | design | DESIGN.md: Players | History arm retains eight observations/actions; reject unbounded context | src/runner/prompt.ts:buildPrompt | tests/runner.test.ts:M-obs contains no history; M-hist caps at 8 |

@@ -1,3 +1,4 @@
+import { runtime } from "./config.js";
 import type { Observation } from "../game.js";
 import { TELL_TABLE } from "../sim/rules.js";
 export type Arm = "M-obs" | "M-hist";
@@ -31,6 +32,6 @@ export function buildPrompt(
     },
     observation,
     legal,
-    ...(arm === "M-hist" ? { history: history.slice(-8) } : {}),
+    ...(arm === "M-hist" ? { history: history.slice(-runtime.history_length) } : {}),
   });
 }

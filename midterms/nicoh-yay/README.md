@@ -1,39 +1,47 @@
 # Trial by Combat: The Broken Oath
 
-Headless, original two-knight combat and prisoner judgment game. TypeScript rules, observation-only controllers, offline evaluations, and an explicitly gated Vertex adapter. No renderer or assets yet. `docs/DESIGN.md` is Nicoh's spec; proposed numeric/timing defaults are in [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md). This implementation is pending Claude's independent review; it has not been approved.
+Original two-knight combat and prisoner judgment game, with TypeScript rules, observation-only controllers, offline evaluation and a gated Vertex adapter. A terminal player interface works; a renderer is pending. Generated key art is included at `art/generated/key-art-v1.png`; planned CC0 renderer assets are not yet included. See [CREDITS](CREDITS.md).
 
-All commands run from **`midterms/nicoh-yay/`**, using Node 24 and npm:
+Course brief correction: per Nicoh's implementation instructions, the revised **2026-10-21 brief, ?Choose your game,? allows ORIGINAL games for full credit**. The root AGENTS.md classic-reconstruction line is outdated. Exact brief quote and direct section link: **TODO ? awaiting source URL/text; the revised brief is absent from this checkout.** This statement is attributed to Nicoh's supplied correction, not presented as a verified quotation.
+
+Fresh clone (Node 24 and npm; PowerShell users with script restrictions can use `npm.cmd`):
 
 ```sh
-npm install
+git clone https://github.com/NICOH-YAY/game-dev-f26.git
+cd game-dev-f26/midterms/nicoh-yay
+npm ci
 npm test
 npm run typecheck
-npm run balance
 npm run play -- 42
-npm run eval -- --suite experiments/suite.json --players baseline,random,always-strike --trials 20
-npm run eval -- --suite experiments/suite.json --players baseline-depth1 --trials 20 --out results/depth1
+npm run balance
 ```
 
-On Windows PowerShell with scripts disabled, use `npm.cmd`. `npm ci` installs the locked dependencies. `play` is a text terminal interface: enter a listed action; the opponent is Aggressor. It prints only observations until the terminal outcome. `build` emits ignored `dist/`; eval/play compile then use plain Node, avoiding platform account lookup in third-party TS launchers.
-
-Evaluation writes one JSONL trace per episode, `results/summary.jsonl`, and [results/comparison.md](results/comparison.md). Twenty trials means twenty **per controller per persona per situation**: 3,520 episodes for all 11 offline controllers. Common seeds pair arms; X1 is held out; no significance claims. The depth-1 validation arm writes to a separate directory. To compare normative policies, include `baseline-weighted` as another offline player. The exact posterior and published likelihoods are engine-owned.
-
-The five-operation player interface is `Game.reset/observe/legalActions/step/outcome` in `src/game.ts`. `step` submits a combat action; the second submission resolves the exchange. Illegal actions leave the whole state unchanged. Players never receive Game or its state; runner-only hooks terminate invalid episodes and implement judgment abstention. See [docs/rule-source-map.md](docs/rule-source-map.md) for `design` evidence and source/test locators. State can be serialized; `stableHash` is a deterministic checksum, not a security primitive.
-
-Live use is separate and costs credits. It requires Nicoh's explicit choice to run the following, Vertex credentials (ADC), and `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `COURSE_MODEL` in the environment:
+All subsequent commands run from `midterms/nicoh-yay/`. `build` emits ignored `dist/`. `play` prints public observations until the terminal outcome. `npm run balance` executes 3,520 episodes: 11 controllers x 4 personas x S1/S2/S3/X1 x 20 paired seeds. Exit 1 means unmet design criteria; exit 2 means execution failure. Current balance and fresh comparisons are in [EVALUATION](EVALUATION.md). Correctness tests do not approve a balance gate.
 
 ```sh
-npm run eval -- --suite experiments/suite.json --players M-obs,M-hist --trials 3 --live --out results/live
+npm run eval -- --suite experiments/suite.json --players baseline,random,always-strike --trials 20 --out results/custom-offline
 ```
 
-No live call was run for this implementation. Tests use MockModel, never network or a fixture masquerading as live. Live pricing is an unfilled, dated placeholder in reports; runtime model IDs are recorded with results. Model configuration and artifact pointers are in `agent-config.json`.
+The CLI always excludes final-only X2. **Do not run X2, including baselines, until the one final evaluation.** X1 is held-out from prompt tuning but observed during balance tuning. X2's new seeds, Mimic policy and evidence configuration are freeze-dated 2026-10-24 in [suite.json](experiments/suite.json). Future final evaluation needs an explicitly reviewed runner change under Nicoh's instruction; no development opt-in flag bypasses the exclusion.
 
-Credits: TODO Nicoh to finalize; see [CREDITS.md](CREDITS.md) for KayKit/Kenney CC0 placeholders. No assets or personal playtester data are included. Observed development bugs are in [docs/BUGLOG.md](docs/BUGLOG.md). No human playtest is claimed.
+The player interface is `Game.reset/observe/legalActions/step/outcome` in `src/game.ts`. Opponent commits first; champion receives a noisy pending-action tell; the second submission resolves simultaneously. Illegal requests preserve state. Controllers never receive Game or private state. [DESIGN](docs/DESIGN.md) and the [rule/source map](docs/rule-source-map.md) define original `design` rules. [agent-config.json](agent-config.json) is loaded and validated for runtime history length, timeouts, caps, reasks and fallback streak; episode options provide explicit test overrides. Baseline fields remain descriptive documentation of its implemented defaults, not runtime overrides.
 
-AGENT-TEAM: TODO ? Nicoh writes personally.
+Vertex setup, **only after Nicoh explicitly approves live calls**:
 
-Limitations: TODO ? Nicoh writes personally.
+1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) for your operating system, then open a fresh terminal and check `gcloud --version`.
+2. Select a Google Cloud project with billing and Vertex AI API enabled, and grant the authenticated user permission to use Vertex AI in that project.
+3. Authenticate Application Default Credentials: `gcloud auth application-default login`. If required by your project, run `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`.
+4. In PowerShell, from this game folder:
 
-Balance targets are separate from CI correctness: `npm run balance` runs all 3,520 offline episodes, writes traces and a per-criterion PASS/FAIL report, and appends it to [BALANCE-FINAL](docs/BALANCE-FINAL.md) while retaining history. Exit 1 means unmet design targets; exit 2 means matrix execution failed. Current criterion (a) FAIL: S2/Sentinel baseline 11/20 versus always-BASH 20/20 (random 8/20). Other declared cells PASS; criterion (b) Adapter ceiling PASS in all four situations. These targets remain unmet; green correctness tests do not approve a balance gate.
+```powershell
+$env:GOOGLE_CLOUD_PROJECT = "YOUR_PROJECT_ID"
+$env:GOOGLE_CLOUD_LOCATION = "global"
+$env:COURSE_MODEL = "gemini-3.5-flash-lite"
+npm.cmd run eval -- --suite experiments/suite.json --players M-obs,M-hist --trials 3 --live --out results/live
+```
 
-`npm test` retains rule, limit, leak, determinism, observed regression and CLI tests. The existing CI workflow runs `npm test` and typecheck unchanged. GUARD now ripostes for 1 damage as approved by Nicoh on 2026-10-24; the S2 sparse-context evidence-loss fix and its controlled comparison are in [BUGLOG](docs/BUGLOG.md).
+The requested model ID must be available to your project at run time; availability and dated pricing remain unverified. This exact command crosses four personas per development situation (96 live episodes, up to 2,880 calls), and excludes X2. The narrower declared-persona scientific comparison is selected from those cells; live trials have not run. No provider or fixture is silently substituted. Model IDs, token usage, latency and fallback sources are recorded. Never store credentials in this repo.
+
+Implementation and review are separate: [AGENTS](AGENTS.md), [rule-change skill](.agents/skills/rule-change/SKILL.md), [balance-check skill](.agents/skills/balance-check/SKILL.md), [invocation log](docs/SKILL-INVOCATIONS.md), [decision register](docs/DECISIONS.md), [review handoff](docs/IMPLEMENTATION-REVIEW-HANDOFF.md). This implementation pass awaits an independent reviewer in a different session; only Nicoh approves gates.
+
+[AGENT-TEAM](AGENT-TEAM.md) and LIMITATIONS in [EVALUATION](EVALUATION.md) are for Nicoh to write in his own voice. [Peer notes](docs/peer-notes/README.md): TODO observed human play. Recording link: **TODO ? Nicoh add a recording URL after recording**. No human play, live model trial or hosted CI result is claimed here.

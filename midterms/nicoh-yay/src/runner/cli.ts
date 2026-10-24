@@ -13,7 +13,7 @@ import type { Scenario } from "../game.js";
 import { streams } from "../sim/random.js";
 import { VertexGemini, type ModelController } from "./model.js";
 import { runEpisode } from "./episode.js";
-import { comparison, type Result } from "./report.js";
+import { comparison, provenance, type Result } from "./report.js";
 const args = process.argv.slice(2);
 const value = (key: string, defaultValue: string) => {
   const i = args.indexOf(key);
@@ -28,11 +28,11 @@ function inside(path: string) {
   return absolute;
 }
 async function main() {
-  const suite = JSON.parse(
-    await readFile(resolve(value("--suite", "experiments/suite.json")), "utf8"),
-  ) as {
+  const suiteText = await readFile(resolve(value("--suite", "experiments/suite.json")), "utf8");
+  const meta = provenance(suiteText);
+  const suite = JSON.parse(suiteText) as {
     testimony_seed_base: number;
-    situations: (Scenario & { id: string; held_out: boolean; duel_seed_base: number })[];
+    situations: (Scenario & { id: string; held_out: boolean; final_only?: boolean; duel_seed_base: number })[];
   };
   const players = value("--players", "baseline,baseline-depth1,baseline-agnostic,baseline-weighted,random,always-strike,always-bash,always-guard,always-recover,always-sidestep,strike-bash").split(
     ",",
@@ -64,7 +64,7 @@ async function main() {
   await mkdir(resolve(out, "traces"), { recursive: true });
   const results: Result[] = [];
   for (const player of players)
-    for (const baseScenario of suite.situations)
+    for (const baseScenario of suite.situations.filter(s => !s.final_only && s.id !== "X2"))
      for (const persona of ["Aggressor","Sentinel","Opportunist","Adapter"] as const) {
       const scenario = {...baseScenario, persona};
       for (let i = 0; i < trials; i++) {
@@ -119,7 +119,8 @@ async function main() {
     inside(`${value("--out", "results")}/summary.jsonl`),
     results.map((r) => JSON.stringify(r)).join("\n") + "\n",
   );
-  const table = comparison(results);
+  await writeFile(inside(`${value("--out", "results")}/provenance.json`), JSON.stringify({...meta,model_ids:[...new Set(results.flatMap(r=>r.model_ids))],config_id:"agent-config.json"},null,2)+"\n");
+  const table = comparison(results, meta);
   await writeFile(inside(`${value("--out", "results")}/comparison.md`), table);
   console.log(table);
 }

@@ -43,6 +43,7 @@ it("frozen situation identities match design; numbers are declared defaults", ()
     ["S2", "strong innocence", "Sentinel", false],
     ["S3", "strong guilt", "Opportunist", false],
     ["X1", "conflicting", "Adapter", true],
+    ["X2", "reliable accusation + unreliable clearance", "Mimic", true],
   ]);
   expect(suite.live_trials).toBe(3);
   expect(suite.situations.every((s: {duel_seed_base: number}) => Number.isSafeInteger(s.duel_seed_base))).toBe(true);
@@ -58,4 +59,11 @@ it("frozen situation identities match design; numbers are declared defaults", ()
       setting.startsWith("strong") ? 17 : setting === "ambiguous" ? 202 : 2,
     );
   }
+});
+
+it("preregistered mixed-reliability card likelihood is exact on a synthetic input",()=>{
+ const e=evidence(42,"reliable accusation + unreliable clearance");
+ expect(e.cards).toEqual(["accuse","clear"]);
+ expect(e.reliability).toEqual([.9,.55]);
+ expect(posterior(e.cards,e.reliability)).toEqual({numerator:81,denominator:92});
 });

@@ -1,3 +1,4 @@
+import { runtime } from "./config.js";
 import { performance } from "node:perf_hooks";
 import { Game, type Observation, type Player, type Scenario } from "../game.js";
 import type { Controller } from "../agents/index.js";
@@ -124,8 +125,8 @@ export async function runEpisode(options: EpisodeOptions) {
       return null;
     }
     let reason = "unparseable";
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (stats.calls >= (options.callCap ?? 30)) {
+    for (let attempt = 0; attempt <= runtime.unparseable_reasks; attempt++) {
+      if (stats.calls >= (options.callCap ?? runtime.call_cap)) {
         game.terminate("model_call_cap", actor);
         return null;
       }
@@ -148,7 +149,7 @@ export async function runEpisode(options: EpisodeOptions) {
             timer = setTimeout(() => {
               reject(new Error("timeout"));
               abort.abort();
-            }, options.timeoutMs ?? 20000);
+            }, options.timeoutMs ?? runtime.timeout_ms);
           }),
         ]);
         parsed = parse(reply.text);
@@ -186,7 +187,7 @@ export async function runEpisode(options: EpisodeOptions) {
         return parsed.action;
       }
       if (reason === "illegal") stats.illegal++;
-      if (reason !== "unparseable" || attempt === 1) break;
+      if (reason !== "unparseable" || attempt === runtime.unparseable_reasks) break;
     }
     stats.fallbacks++;
     streak[actor]++;
@@ -201,7 +202,7 @@ export async function runEpisode(options: EpisodeOptions) {
       action === "abstain" || legal.includes(action),
       reason,
     );
-    if (streak[actor] >= 3) {
+    if (streak[actor] >= runtime.consecutive_fallback_limit) {
       game.terminate("invalid_forfeit", actor);
       return null;
     }

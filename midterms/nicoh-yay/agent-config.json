@@ -31,5 +31,6 @@
     "results": "results/summary.jsonl",
     "comparison": "results/comparison.md",
     "review_handoff": "docs/REVIEW-HANDOFF.md"
-  }
+  },
+  "configuration_scope": "runtime is loaded and validated by src/runner/config.ts; baseline fields describe implemented defaults (not runtime overrides); artifacts are reference paths"
 }

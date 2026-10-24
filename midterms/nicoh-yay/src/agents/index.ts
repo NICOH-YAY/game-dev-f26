@@ -72,7 +72,7 @@ export class PersonaController implements Controller {
     let preferred: CombatAction = o.exchange % 2 === 0 ? "STRIKE" : "BASH";
     let probability = 7 / 11;
     if (this.persona === "Aggressor" && this.parried >= 2) preferred = "BASH";
-    if (this.persona === "Sentinel") {
+    if (this.persona === "Sentinel" || this.persona === "Mimic") {
       preferred = "GUARD";
       probability = .55;
       if (this.history.slice(-3).filter(a => a === "STRIKE").length >= 2) probability = .75;
@@ -95,6 +95,14 @@ export class PersonaController implements Controller {
         STRIKE: "GUARD", BASH: "STRIKE", GUARD: "BASH", RECOVER: "STRIKE", SIDESTEP: "GUARD",
       };
       preferred = counters[mode]; probability = .80;
+    }
+    if (this.persona === "Mimic" && o.previous) {
+      let branch;
+      [this.rng, branch] = draw(this.rng);
+      if (branch / 4294967296 < .70) {
+        const copy = o.previous.opponent;
+        return l.includes(copy) ? copy : "GUARD";
+      }
     }
     if (!l.includes(preferred)) preferred = "GUARD";
     let n;

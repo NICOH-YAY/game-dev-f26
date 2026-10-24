@@ -14,6 +14,7 @@ if (run.status !== 0) {
 const rows = readFileSync(`${out}/summary.jsonl`, 'utf8').trim().split('\n').map(JSON.parse);
 const players = ['baseline','baseline-depth1','baseline-agnostic','baseline-weighted','random','always-strike','always-bash','always-guard','always-recover','always-sidestep','strike-bash'];
 const suite = JSON.parse(readFileSync('experiments/suite.json','utf8'));
+suite.situations = suite.situations.filter(s => !s.final_only && s.id !== 'X2');
 const cells = suite.situations.flatMap(s => ['Aggressor','Sentinel','Opportunist','Adapter'].map(p => `${s.id}/${p}`));
 // Fail execution rather than publish an incomplete matrix as a balance result.
 if (rows.length !== 3520 || rows.some(r => r.stats.calls !== 0)) throw new Error('Expected 3,520 offline episodes');

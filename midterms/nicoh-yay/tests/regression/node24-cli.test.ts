@@ -30,6 +30,12 @@ it("observed regression: offline CLI runs on Node 24 without OS account lookup",
     .split("\n")
     .map((s) => JSON.parse(s));
   expect(rows).toHaveLength(16);
+  expect(rows.some(r => r.situation.startsWith("X2/"))).toBe(false);
+  expect(rows.every(r => r.seed < 3127000000 || r.seed >= 3127001000)).toBe(true);
+  const meta=JSON.parse(readFileSync(".test-results/provenance.json","utf8"));
+  expect(meta.git_sha).toMatch(/^[0-9a-f]{40}$/);
+  expect(meta.source_manifest["src/runner/config.ts"]).toMatch(/^[0-9a-f]{64}$/);
+  expect(meta.suite_sha256).toMatch(/^[0-9a-f]{64}$/);
   expect(
     rows.every((r) => r.stats.calls === 0 && r.outcome.status === "terminal"),
   ).toBe(true);
