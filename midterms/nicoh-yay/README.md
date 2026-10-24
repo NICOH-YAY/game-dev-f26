@@ -2,7 +2,7 @@
 
 Original two-knight combat and prisoner judgment game, with TypeScript rules, observation-only controllers, offline evaluation and a gated Vertex adapter. A terminal player interface works; a renderer is pending. Generated key art is included at `art/generated/key-art-v1.png`; planned CC0 renderer assets are not yet included. See [CREDITS](CREDITS.md).
 
-Course brief correction: per Nicoh's implementation instructions, the revised **2026-10-21 brief, ?Choose your game,? allows ORIGINAL games for full credit**. The root AGENTS.md classic-reconstruction line is outdated. Exact brief quote and direct section link: **TODO ? awaiting source URL/text; the revised brief is absent from this checkout.** This statement is attributed to Nicoh's supplied correction, not presented as a verified quotation.
+Course brief correction: per Nicoh's implementation instructions, the revised **2026-10-21 brief, ?Choose your game,? allows ORIGINAL games for full credit**. The root AGENTS.md classic-reconstruction line is outdated. The CourseWorks midterm brief (revised October 21, 2026), section "Choose your game", reads: "Choose either a classic reconstruction or an original game. Both are eligible for full credit." Source: https://courseworks2.columbia.edu/courses/258228/assignments/1749857 (login required).
 
 Fresh clone (Node 24 and npm; PowerShell users with script restrictions can use `npm.cmd`):
 
