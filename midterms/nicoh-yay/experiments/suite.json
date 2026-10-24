@@ -1,0 +1,41 @@
+{
+  "name": "trial-by-combat-declared-v0.1",
+  "frozen": "2026-10-24",
+  "seed_policy": "Duel seeds paired across arms/personas within situation, disjoint across situations; testimony uses its own base and named stream. Ranges reserve 1000 trials per situation.",
+  "live_trials": 3,
+  "situations": [
+    {
+      "id": "S1",
+      "evidence": "ambiguous",
+      "playerHP": 12,
+      "persona": "Aggressor",
+      "held_out": false,
+      "duel_seed_base": 2026102401
+    },
+    {
+      "id": "S2",
+      "evidence": "strong innocence",
+      "playerHP": 9,
+      "persona": "Sentinel",
+      "held_out": false,
+      "duel_seed_base": 2026103401
+    },
+    {
+      "id": "S3",
+      "evidence": "strong guilt",
+      "playerHP": 12,
+      "persona": "Opportunist",
+      "held_out": false,
+      "duel_seed_base": 2026104401
+    },
+    {
+      "id": "X1",
+      "evidence": "conflicting",
+      "playerHP": 12,
+      "persona": "Adapter",
+      "held_out": true,
+      "duel_seed_base": 2026105401
+    }
+  ],
+  "testimony_seed_base": 1026102401
+}

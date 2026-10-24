@@ -1,0 +1,25 @@
+{
+  "name": "trial-by-combat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "eval": "npm run build --silent && node dist/runner/cli.js",
+    "play": "npm run build --silent && node dist/runner/play.js",
+    "build": "tsc -p tsconfig.build.json",
+    "balance": "npm run build --silent && node experiments/balance.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.46.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.5"
+  }
+}
