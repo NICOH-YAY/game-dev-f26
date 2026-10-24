@@ -45,3 +45,12 @@ The requested model ID must be available to your project at run time; availabili
 Implementation and review are separate: [AGENTS](AGENTS.md), [rule-change skill](.agents/skills/rule-change/SKILL.md), [balance-check skill](.agents/skills/balance-check/SKILL.md), [invocation log](docs/SKILL-INVOCATIONS.md), [decision register](docs/DECISIONS.md), [review handoff](docs/IMPLEMENTATION-REVIEW-HANDOFF.md). This implementation pass awaits an independent reviewer in a different session; only Nicoh approves gates.
 
 [AGENT-TEAM](AGENT-TEAM.md) and LIMITATIONS in [EVALUATION](EVALUATION.md) are for Nicoh to write in his own voice. [Peer notes](docs/peer-notes/README.md): TODO observed human play. Recording link: **TODO ? Nicoh add a recording URL after recording**. No human play, live model trial or hosted CI result is claimed here.
+
+## 3D browser renderer
+
+From this folder run `npm ci --cache .npm-cache` and `npm run web`.
+Press Enter for human play, or choose Sample replay / Load JSONL.
+Keys 1–5 select Strike, Bash, Guard, Recover, Sidestep; Enter confirms.
+`npm run web:build` creates `web/dist/` for static hosting.
+See [renderer handoff](docs/RENDERER-HANDOFF.md) for trace format, provenance,
+boundaries, validation and limitations. Independent Claude review is pending.

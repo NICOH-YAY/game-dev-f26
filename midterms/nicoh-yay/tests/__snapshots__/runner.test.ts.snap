@@ -28,11 +28,101 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
   "trace": [
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 0,
+        "hp": [
+          12,
+          12,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 3,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": null,
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "53183094",
       "obs_hash": "772eae5e",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 0,
+        "hp": [
+          12,
+          12,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 3,
+        "phase": "HEARING",
+        "position": 3,
+        "previous": null,
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "CONTINUE",
       },
@@ -40,17 +130,113 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "CONTINUE",
       "source": "engine",
       "step": 0,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 1,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 0,
+        "hp": [
+          12,
+          12,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 3,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": null,
+        "tell": "shifting_feet",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "6070305e",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 0,
+        "hp": [
+          12,
+          12,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 3,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": null,
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -58,17 +244,116 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 1,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 1,
+        "hp": [
+          9,
+          9,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 2,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "e1072a5c",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 0,
+        "hp": [
+          12,
+          12,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 3,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": null,
+        "tell": "shifting_feet",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -76,17 +361,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 2,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 1,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 1,
+        "hp": [
+          9,
+          9,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 2,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": "raised_blade",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "da7b8f1c",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 1,
+        "hp": [
+          9,
+          9,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 2,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -94,17 +481,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 3,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 2,
+        "hp": [
+          6,
+          6,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "98feef2a",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 1,
+        "hp": [
+          9,
+          9,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "ready",
+        "own_stamina": 2,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": "raised_blade",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -112,17 +601,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 4,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 1,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 2,
+        "hp": [
+          6,
+          6,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": "raised_blade",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "63b3379f",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 2,
+        "hp": [
+          6,
+          6,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -130,17 +721,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 5,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 3,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "7af27f25",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 2,
+        "hp": [
+          6,
+          6,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": "raised_blade",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -148,17 +841,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 6,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 1,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 3,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": "braced_shield",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "9fca5cec",
       "obs_hash": "c4c75db1",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 3,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "GUARD",
       },
@@ -166,17 +961,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "GUARD",
       "source": "controller",
       "step": 7,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 4,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "GUARD",
+          "own": "GUARD",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "9fca5cec",
       "obs_hash": "b0b0914f",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 3,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": "braced_shield",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "GUARD",
       },
@@ -184,17 +1081,119 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "GUARD",
       "source": "controller",
       "step": 8,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 1,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 4,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "GUARD",
+          "own": "GUARD",
+        },
+        "tell": "shifting_feet",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "a434dfb5",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 4,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "GUARD",
+          "own": "GUARD",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -202,17 +1201,126 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 9,
+      "terminal": {
+        "judgment": null,
+        "reason": null,
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 5,
+        "hp": [
+          0,
+          0,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "JUDGMENT",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": {
+          "authority": "counsel",
+          "court_policy": "DETAIN",
+          "p_guilt": {
+            "denominator": 17,
+            "numerator": 16,
+          },
+        },
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "924e9989",
       "obs_hash": "373c7e39",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 4,
+        "hp": [
+          3,
+          3,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "low",
+        "own_stamina": 1,
+        "phase": "DUEL",
+        "position": 3,
+        "previous": {
+          "opponent": "GUARD",
+          "own": "GUARD",
+        },
+        "tell": "shifting_feet",
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "STRIKE",
       },
@@ -220,17 +1328,126 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "STRIKE",
       "source": "controller",
       "step": 10,
+      "terminal": {
+        "judgment": null,
+        "reason": "double_ko_draw",
+        "status": "ongoing",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,
     },
     {
       "actor": 0,
+      "after": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 5,
+        "hp": [
+          0,
+          0,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "EPILOGUE",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": null,
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "episode_id": "trial-by-combat-42",
       "error": null,
       "latency_ms": 0,
       "legal_hash": "963105cd",
       "obs_hash": "b64327d1",
+      "observation": {
+        "cornered": [
+          false,
+          false,
+        ],
+        "exchange": 5,
+        "hp": [
+          0,
+          0,
+        ],
+        "oaths": [
+          "safe passage",
+          "protect inhabitants",
+        ],
+        "opponent_stamina_band": "spent",
+        "own_stamina": 0,
+        "phase": "JUDGMENT",
+        "position": 3,
+        "previous": {
+          "opponent": "STRIKE",
+          "own": "STRIKE",
+        },
+        "tell": null,
+        "testimony": [
+          "accuse",
+          "accuse",
+        ],
+        "testimony_reliability": [
+          0.8,
+          0.8,
+        ],
+        "verdict_context": {
+          "authority": "counsel",
+          "court_policy": "DETAIN",
+          "p_guilt": {
+            "denominator": 17,
+            "numerator": 16,
+          },
+        },
+        "witness_reliability": {
+          "denominator": 5,
+          "guilty": {
+            "accuse": 4,
+            "clear": 1,
+          },
+          "innocent": {
+            "accuse": 1,
+            "clear": 4,
+          },
+          "prior": {
+            "denominator": 2,
+            "numerator": 1,
+          },
+        },
+      },
       "parsed": {
         "action": "DETAIN",
       },
@@ -238,6 +1455,17 @@ exports[`golden offline JSONL trace and terminal outcome 1`] = `
       "raw_reply": "DETAIN",
       "source": "controller",
       "step": 11,
+      "terminal": {
+        "judgment": {
+          "binding": false,
+          "choice": "DETAIN",
+          "counsel": "DETAIN",
+          "verdict": "DETAIN",
+        },
+        "reason": "double_ko_draw",
+        "status": "terminal",
+        "winner": null,
+      },
       "tok_in": 0,
       "tok_out": 0,
       "valid": true,

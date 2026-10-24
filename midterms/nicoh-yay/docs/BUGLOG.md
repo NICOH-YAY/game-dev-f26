@@ -72,3 +72,38 @@ Observed report bug: src/runner/report.ts read rows[0] posterior for an entire p
 X1 had been observed during balance tuning; it must not be claimed as clean held-out evidence. X2 was preregistered 2026-10-24 with unused ranges. CLI and balance explicitly exclude it. Integrity scans existing result files for reserved seeds; a CLI regression confirms no X2 rows. Mimic policy test failed first (.0935 RECOVER rate rather than >.69) before its .70 repeat/Sentinel-mixture implementation. Unit tests use synthetic observations and non-suite seeds, not X2 episodes. Config validation regression failed on missing config module before implementation. Follow-up full test run exposed an old four-situation identity assertion; updated it to include the newly preregistered fifth entry without executing it.
 
 Independent review of this pass is pending in a different session. No approval, live or human result is implied.
+
+
+## 2026-10-24 renderer QA repairs
+
+- Runner traces omitted observations and post-step public facts. New runner
+  regression failed on missing `observation.own_stamina`; rows now contain
+  player-0 observation copies, post-transition observation and allowlisted
+  terminal metadata. The leak assertion reuses the controller leak-test field
+  list and checks recursively, including terminal rows. Golden trace updated.
+  Five offline samples regenerated; no evaluation claims, X2 or model calls.
+- Human resolution did not render the new HP, action label or disabled controls
+  until its 1.5-second timer completed. It now publishes the resolved observation
+  and label together immediately; repeated Enter keydowns are ignored. The
+  Aggressor seed-42 session regression confirms one STRIKE/STRIKE exchange gives
+  [9,9], exchange 1, a repeated uncommitted action is rejected, and next-opponent
+  commits leave HP unchanged. This regression passed before the UI fix: the
+  exact reported [8,9] first-exchange result is NOT reproduced and its arithmetic
+  cause remains unconfirmed. No extra damage is applied by animation mapping.
+- Own-stamina symbols were literal question marks. New pips test failed before
+  the formatter existed; exact own stamina now uses ASCII filled/empty pips.
+  Opponent display remains its public band.
+- Castle GLBs referenced absent `assets/Textures/colormap.png`. Restored the
+  original Kenney GLB-format colormap at that URI and added credit.
+- Charset already existed. UI used non-ASCII separators/glyphs unsupported by
+  the pixel font; replaced them with ASCII. Browser source and HTML verified
+  UTF-8 without BOM. Replay starts automatically with Pause and Step available;
+  sparse legacy traces still show unknown values rather than invented facts.
+- Raised hemisphere intensity 2 -> 2.7, lightened ground bounce, moved duel camera
+  from z=19 to z=10 (about 37% viewport height for a 2.6-unit character at wide
+  aspect), and track clash position to keep wall exchanges framed. Pixel pass
+  and disabled antialiasing retained. Visual browser re-QA remains independent.
+
+Validation: npm test: 94/94; npm run typecheck: passed; npm run web:build:
+passed (existing large-chunk advisory). Independent review remains pending in
+another session; no gate approval, commits, pushes or model calls.

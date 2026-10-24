@@ -11,6 +11,9 @@ export type Trace = {
   phase: string;
   actor: Player;
   source: string;
+  observation: Observation;
+  after: Observation;
+  terminal: { status: "ongoing" | "terminal"; reason: ReturnType<Game["outcome"]>["reason"]; winner: Player | null; judgment: ReturnType<Game["outcome"]>["judgment"] };
   obs_hash: string;
   legal_hash: string;
   raw_reply: string | null;
@@ -67,6 +70,15 @@ export async function runEpisode(options: EpisodeOptions) {
     latencies: [] as number[],
   };
   const episode_id = options.episodeId ?? `trial-by-combat-${options.seed}`;
+  const publicTerminal = () => {
+    const {status, reason, winner, judgment} = game.outcome();
+    return {status, reason, winner, judgment};
+  };
+  // Update only the last attempt after each engine transition. Never serialize State.
+  const recordAfter = () => {
+    const row = trace.at(-1);
+    if (row) { row.after = game.observe(0); row.terminal = publicTerminal(); }
+  };
   const log = (
     actor: Player,
     source: string,
@@ -86,6 +98,9 @@ export async function runEpisode(options: EpisodeOptions) {
       phase: obs.phase,
       actor,
       source,
+      observation: game.observe(0),
+      after: game.observe(0),
+      terminal: publicTerminal(),
       obs_hash: stableHash(obs),
       legal_hash: stableHash(legal),
       raw_reply,
@@ -220,6 +235,7 @@ export async function runEpisode(options: EpisodeOptions) {
     null,
   );
   game.step(0, "CONTINUE");
+  recordAfter();
   while (game.outcome().status === "ongoing") {
     if (game.state.phase === "JUDGMENT") {
       const o = game.observe(0),
@@ -227,6 +243,7 @@ export async function runEpisode(options: EpisodeOptions) {
       if (a === null) break;
       if (a === "abstain") game.abstain();
       else game.step(0, a);
+      recordAfter();
       history[0].push({ observation: o, action: a });
       continue;
     }
@@ -234,13 +251,16 @@ export async function runEpisode(options: EpisodeOptions) {
     const b = await acquire(1, opponentObs, opponentLegal, options.opponent);
     if (b === null) break;
     game.step(1, b);
+    recordAfter();
     const observations = [game.observe(0), opponentObs];
     const a = await acquire(0, observations[0], game.legalActions(0), options.controller);
     if (a === null) break;
     game.step(0, a);
+    recordAfter();
     history[0].push({ observation: observations[0], action: a });
     history[1].push({ observation: observations[1], action: b });
   }
+  recordAfter();
   return {
     episode_id,
     seed: options.seed,

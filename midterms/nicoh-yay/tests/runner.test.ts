@@ -1,3 +1,4 @@
+import { HIDDEN_FIELDS } from "./hidden-fields.js";
 import { it, expect } from "vitest";
 import { runEpisode } from "../src/runner/episode.js";
 import { MockModel } from "../src/runner/model.js";
@@ -168,4 +169,15 @@ it("offline controller failure is terminal error, never a silent fallback", asyn
   expect(r.outcome.reason).toBe("error");
   expect(r.stats.fallbacks).toBe(0);
   expect(r.stats.illegal).toBe(1);
+});
+
+it('records player-zero facts and public post-step state without hidden fields',async()=>{
+ const r=await runEpisode({seed:42,controller:new AlwaysStrike(),opponent:new AlwaysStrike()});
+ const hidden=HIDDEN_FIELDS;
+ function check(x:unknown){if(x && typeof x==='object')for(const [k,v] of Object.entries(x)){expect(hidden).not.toContain(k);check(v);}}
+ for(const row of r.trace){expect(row).toHaveProperty('observation.own_stamina');expect(row).toHaveProperty('after.hp');expect(row).toHaveProperty('terminal.status');check(row);}
+ const clash=r.trace.find(t=>t.actor===0&&t.phase==='DUEL')!;
+ expect(clash.observation.hp).toEqual([12,12]);expect(clash.after.hp).toEqual([9,9]);
+ expect(clash.after.previous).toEqual({own:'STRIKE',opponent:'STRIKE'});
+ expect(r.trace.at(-1)?.terminal.status).toBe('terminal');
 });

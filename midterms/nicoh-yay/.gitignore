@@ -9,3 +9,6 @@ results/**/*.jsonl
 !results/**/summary.jsonl
 !results/samples/*.jsonl
 results/**/*.log
+
+web/dist/
+.claude/

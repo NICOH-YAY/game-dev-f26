@@ -12,14 +12,19 @@
     "eval": "npm run build --silent && node dist/runner/cli.js",
     "play": "npm run build --silent && node dist/runner/play.js",
     "build": "tsc -p tsconfig.build.json",
-    "balance": "npm run build --silent && node experiments/balance.mjs"
+    "balance": "npm run build --silent && node experiments/balance.mjs",
+    "web": "vite web --host 127.0.0.1",
+    "web:build": "vite build web --base=./"
   },
   "dependencies": {
-    "@google/genai": "^1.46.0"
+    "@google/genai": "^1.46.0",
+    "three": "0.180.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "typescript": "^5.9.0",
+    "@types/three": "0.180.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
     "vitest": "^5.0.5"
   }
 }

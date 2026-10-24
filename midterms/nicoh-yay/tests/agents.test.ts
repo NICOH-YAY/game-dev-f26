@@ -1,3 +1,4 @@
+import { HIDDEN_FIELDS } from "./hidden-fields.js";
 import { it, expect } from "vitest";
 import { Game } from "../src/game.js";
 import {
@@ -102,7 +103,7 @@ it("baseline non-interference across hidden states and poison fields for the sam
   g.state.pending[1] = "RECOVER";
   const poisoned = g.observe(0);
   expect(poisoned).toEqual(clean);
-  for (const key of ["persona", "guilt", "pending", "rng", "opponent_stamina", "state"])
+  for (const key of HIDDEN_FIELDS)
    Object.defineProperty(poisoned, key, { get() { throw new Error(`hidden read: ${key}`); } });
   const action = a.choose(clean, legal);
   expect(b.choose(poisoned, legal)).toBe(action);
