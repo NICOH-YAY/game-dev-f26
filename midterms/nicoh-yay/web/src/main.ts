@@ -1,50 +1,131 @@
 import './style.css';
-import { Arena } from './arena.js';
-import { animationCues,staminaPips,parseTrace,sourceBadge,type TraceStep } from './mapping.js';
-import { createSession } from './session.js';
-import type { Observation,Persona,Phase } from '../../src/game.js';
-const ui=document.querySelector<HTMLElement>('#ui')!;
-const arena=new Arena(document.querySelector<HTMLCanvasElement>('#world')!);
-let mode:'title'|'play'|'replay'='title', session:ReturnType<typeof createSession>|undefined;
-let rows:TraceStep[]=[],cursor=0,playing=false,speed=1,selected='',busy=false,phase:Phase='HEARING',obs:Observation|undefined;
-let last='',caption='',badge='',latency='',error='',replayDone=false;
-let timer:ReturnType<typeof setTimeout>|undefined;
-let remaining=0,replayStage:'wait'|'animation'|null=null,pending:TraceStep[]=[],replayBefore:Observation|undefined,replayAfter:Observation|undefined,manual=false;
-let replayOutcome:TraceStep['outcome'];
-let replayTerminal:TraceStep['terminal'];
-let lastTick=performance.now();
-function tick(now:number){const dt=Math.min((now-lastTick)/1000,.1);lastTick=now;if(mode==='replay'&&busy&&(playing||manual)){remaining-=dt*speed;if(remaining<=0){if(replayStage==='wait'){arena.animate(animationCues(pending,replayBefore,replayAfter));replayStage='animation';remaining=1.5;if(replayAfter)arena.present(replayAfter);}else{busy=false;manual=false;replayStage=null;if(replayAfter){obs=replayAfter;phase=obs.phase;}if(cursor===rows.length){phase='EPILOGUE';replayDone=true;playing=false;}render();if(playing)step();}}}arena.setPlayback(mode==='replay'&&!playing&&!manual,mode==='replay'?speed:1);requestAnimationFrame(tick);}requestAnimationFrame(tick);
-const esc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const base=import.meta.env.BASE_URL;
-function controls(){return `<nav><button data-mode="title">Title</button><button data-mode="play">New human game</button><select id="persona">${['Aggressor','Sentinel','Opportunist','Adapter','Mimic'].map(p=>`<option>${p}</option>`).join('')}</select><button id="sample">Sample replay</button><label class="button">Load JSONL<input type="file" id="file" accept=".jsonl,.json"></label></nav>`;}
-function render(){
- arena.present(obs,mode==='title');
- if(mode==='title') {ui.innerHTML=`<section class="title" style="background-image:linear-gradient(0deg,#101322ee,transparent),url('${base}assets/key-art-v1.png')"><small>NICOH | TRIAL BY COMBAT</small><h1>THE BROKEN OATH</h1><p>A promise at the edge of a blade.</p><button id="enter">Press Enter</button></section>${controls()}<p class="status">${esc(error)}</p>`;bind();return;}
- let body='';
- if(phase==='HEARING')body=`<section class="panel"><small>THE HEARING</small><h1>Two witnesses. Two oaths.</h1><div class="cards">${obs?obs.testimony.map((t,i)=>`<article><h2>Witness ${i+1}</h2><p>${t==='accuse'?'Valerius betrayed the inhabitants.':'Valerius is innocent of this charge.'}</p><b>Reliability ${Math.round(obs!.testimony_reliability[i]*100)}%</b></article>`).join(''):'<article>Testimony and reliability were not recorded in this action-only trace.</article>'}</div><p>Oaths: safe passage | protect inhabitants</p>${mode==='play'?'<button data-action="CONTINUE">Enter the courtyard ></button>':''}</section>`;
- if(phase==='JUDGMENT')body=`<section class="panel"><small>JUDGMENT | ${esc(obs?.verdict_context?.authority||'authority unrecorded')}</small><h1>The sword has spoken. Now choose.</h1><p>${obs?.verdict_context?.authority==='counsel'?'Your counsel is advisory. Court policy: DETAIN.':''}</p>${mode==='play'?'<button data-action="RELEASE">RELEASE</button><button data-action="DETAIN">DETAIN</button>':'<p>Recorded judgment follows on the next step.</p>'}</section>`;
- if(phase==='EPILOGUE') {const out=session?.outcome()??replayOutcome;body=`<section class="panel"><small>EPILOGUE</small><h1>The oath remains in the ledger.</h1>${out?`<p>Valerius: ${out.guilt?'GUILTY':'INNOCENT'} | Court verdict: ${esc((out.judgment as {verdict?:string}|null)?.verdict)}</p><div class="ledger">${Object.entries(out.ledger??{}).map(([k,v])=>`<p>${esc(k.replaceAll('_',' '))}: ${esc(typeof v==='object'?JSON.stringify(v):v)}</p>`).join('')}</div>`:`<p>Replay ended. ${esc(replayTerminal?.reason??'Terminal details unrecorded')} | Court verdict: ${esc((replayTerminal?.judgment as {verdict?:string}|null)?.verdict??'unrecorded')}</p>`}<button data-mode="title">Return to title</button></section>`;}
- ui.innerHTML=`${controls()}<header><div class="fighter blue"><b>ROLAND</b><meter min="0" max="12" value="${obs?.hp[0]??0}"></meter><span>HP ${obs?.hp[0]??'?'} | ${obs?staminaPips(obs.own_stamina):'stamina unrecorded'}</span></div><div class="counter">EXCHANGE ${obs?.exchange??'?'}/18<br><small>${mode.toUpperCase()}</small></div><div class="fighter red"><b>VALERIUS</b><meter min="0" max="12" value="${obs?.hp[1]??0}"></meter><span>HP ${obs?.hp[1]??'?'} | stamina ${esc(obs?.opponent_stamina_band??'unrecorded')}</span></div></header><div class="tell">${obs?.tell?`VALERIUS COMMITS FIRST | ${esc(obs.tell)}`:mode==='replay'?'Tell unrecorded in sparse trace':''}</div>${body}<footer><div class="lane">WALL | ${Array.from({length:7},(_,i)=>i===obs?.position?'X':'-').join(' ')} | WALL ${obs?'':'| footing unrecorded'}</div><p class="result">${esc(last)}</p>${mode==='play'&&phase==='DUEL'?`<div class="actions">${['STRIKE','BASH','GUARD','RECOVER','SIDESTEP'].map((a,i)=>`<button class="${selected===a?'selected':''}" data-select="${a}" ${!session!.legal().includes(a)||busy?'disabled':''}>${i+1} ${a}</button>`).join('')}<button id="confirm" ${!selected||busy?'disabled':''}>Confirm ></button></div>`:''}${mode==='replay'?`<div><button id="toggle">${playing?'Pause':'Play'}</button><button id="step" ${busy?'disabled':''}>Step</button><select id="speed">${[.5,1,2,4].map(n=>`<option ${n===speed?'selected':''} value="${n}">${n}x</option>`).join('')}</select><span> ${cursor}/${rows.length} rows | ${esc(badge)} | ${esc(latency)}</span></div><p>${esc(caption)}</p>`:''}<p class="status" role="status">${esc(error)}</p></footer>`;bind();
+import { reset, tick, launch, DT, observe, type State } from '../../src/sim/index.js';
+import { TowerScene } from './scene.js';
+const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const canvas = el<HTMLCanvasElement>('game');
+const overlay = el('overlay');
+const start = el<HTMLButtonElement>('start');
+let state: State = reset();
+let mode: 'title' | 'playing' | 'victory' = 'title';
+let angle = 61, charging = false, chargeTime = 0, power = 0;
+let accumulator = 0, last = performance.now(), toastTime = 0, best = 0, lastSaved = 0;
+const keys = new Set<string>();
+try {
+    const stored = Number(localStorage.getItem('vaulting-ambition-best'));
+    if (Number.isFinite(stored) && stored > 0)
+        best = stored;
 }
-function startPlay(){clearTimeout(timer);arena.reset();mode='play';playing=false;busy=false;replayDone=false;const persona=(document.querySelector<HTMLSelectElement>('#persona')?.value??'Aggressor') as Persona;session=createSession(persona);obs=session.observe();phase=obs.phase;last='';error='';selected='';render();}
-function commit(){session!.commit();obs=session!.observe();phase=obs.phase;render();}
-function act(action:string){if(busy||mode!=='play')return;const before=session!.observe();const r=session!.act(action);if(!r.accepted){error=r.error??'Rejected';render();return;}const after=session!.observe();selected='';
- if(r.resolved){busy=true;const steps:TraceStep[]=[{phase:'DUEL',actor:0,parsed:{action:after.previous!.own}},{phase:'DUEL',actor:1,parsed:{action:after.previous!.opponent}}];arena.animate(animationCues(steps,before,after));last=`${after.previous!.own} / ${after.previous!.opponent}`;obs=after;phase=after.phase;render();arena.present(after);timer=setTimeout(()=>{busy=false;obs=after;phase=after.phase;commit();},1500);}
- else {obs=after;phase=after.phase;commit();}
+catch { /* Storage may be blocked. */ }
+const scene = new TowerScene(canvas);
+const art = new Image();
+art.onload = () => { el('overlay').style.background = 'linear-gradient(90deg,#101a2bf5,#101a2bb0 50%,#101a2b55)'; el('overlay').style.isolation = 'isolate'; (document.querySelector('.title-art') as HTMLElement).style.backgroundImage = `url("${art.src}")`; };
+art.src = `${import.meta.env.BASE_URL}art/title.png`;
+function begin() { state = reset(); mode = 'playing'; overlay.hidden = true; el('controls').hidden = false; charging = false; chargeTime = 0; power = 0; accumulator = 0; keys.clear(); toast('COURTYARD ? AIM HIGH'); }
+start.addEventListener('click', begin);
+function toast(message: string) { el('toast').textContent = message; toastTime = 2.4; }
+function charge() { if (mode === 'playing' && state.phase === 'standing' && !charging) {
+    charging = true;
+    chargeTime = 0;
+    power = 0;
+} }
+function release() { if (!charging)
+    return; charging = false; if (mode === 'playing' && state.phase === 'standing') {
+    state = launch(state, angle, power);
+    if (state.snapped)
+        toast('SNAP! TOO BOLD.');
+} }
+canvas.addEventListener('pointermove', e => { if (mode === 'playing' && state.phase === 'standing')
+    angle = scene.pointerAngle(e.clientX, e.clientY, state); });
+canvas.addEventListener('pointerdown', e => { if (e.button === 0) {
+    canvas.setPointerCapture(e.pointerId);
+    charge();
+} });
+canvas.addEventListener('pointerup', e => { if (e.button === 0)
+    release(); });
+canvas.addEventListener('pointercancel', () => { charging = false; power = 0; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('keydown', e => {
+    if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code))
+        e.preventDefault();
+    if (e.repeat)
+        return;
+    if (e.code === 'KeyR' && mode === 'playing') {
+        charging = false;
+        keys.clear();
+        if (window.confirm('Restart at the courtyard? Your current climb and timer will reset.'))
+            begin();
+        last = performance.now();
+        accumulator = 0;
+        return;
+    }
+    if ((e.code === 'Enter' || e.code === 'Space') && mode !== 'playing') {
+        begin();
+        return;
+    }
+    keys.add(e.code);
+    if (e.code === 'Space')
+        charge();
+});
+window.addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'Space')
+    release(); });
+window.addEventListener('blur', () => { keys.clear(); charging = false; power = 0; accumulator = 0; });
+document.addEventListener('visibilitychange', () => { last = performance.now(); accumulator = 0; charging = false; keys.clear(); });
+const time = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+function win() { mode = 'victory'; charging = false; overlay.hidden = false; el('controls').hidden = true; el('message').innerHTML = `Crown claimed. Ambition vindicated.<br>${time(state.ticks * DT)} ? ${state.vaults} vaults ? ${state.falls} falls`; start.textContent = 'CLIMB AGAIN ?'; (document.querySelector('.eyebrow') as HTMLElement).textContent = 'THE CROWN IS YOURS'; toast(''); }
+function frame(now: number) {
+    const dt = document.hidden ? 0 : Math.min((now - last) / 1000, .1);
+    last = now;
+    if (mode === 'playing') {
+        if (state.phase === 'standing') {
+            if (keys.has('KeyA') || keys.has('ArrowLeft'))
+                angle = Math.min(155, angle + dt * 65);
+            if (keys.has('KeyD') || keys.has('ArrowRight'))
+                angle = Math.max(25, angle - dt * 65);
+        }
+        if (charging) {
+            chargeTime += dt;
+            power = chargeTime < 1.05 ? chargeTime / 1.05 : .6 + .4 * Math.cos((chargeTime - 1.05) * 4.6);
+        }
+        accumulator += dt;
+        while (accumulator >= DT) {
+            const oldSection = observe(state).section;
+            state = tick(state);
+            accumulator -= DT;
+            if (state.landImpact > 0) {
+                scene.landing(state);
+                if (state.landImpact > 12)
+                    toast('A LONG WAY DOWN. STILL IN IT.');
+            }
+            if (observe(state).section !== oldSection && state.y > 0)
+                toast(observe(state).section.toUpperCase());
+            if (state.won) {
+                win();
+                break;
+            }
+        }
+    }
+    best = Math.max(best, state.best);
+    if (best > lastSaved + .1) {
+        try {
+            localStorage.setItem('vaulting-ambition-best', String(best));
+            lastSaved = best;
+        }
+        catch {
+            lastSaved = best;
+        }
+    }
+    const o = observe(state);
+    el('section').textContent = o.section.toUpperCase();
+    el('height').textContent = `HEIGHT ${Math.max(0, Math.floor(state.y))}m / BEST ${Math.floor(best)}m`;
+    el('stats').textContent = `${time(state.ticks * DT)} ? ${state.vaults} VAULTS ? ${state.falls} FALLS`;
+    el('angle').textContent = `${Math.round(angle)}?`;
+    el('power').style.width = `${power * 100}%`;
+    el('power').style.background = power >= .9 ? '#df8674' : '#dbb86d';
+    el('powerLabel').textContent = state.phase === 'runup' ? 'PLANTING' : state.phase === 'airborne' ? (state.snapped ? 'SNAPPED' : 'COMMITTED') : charging ? `${Math.round(power * 100)}%` : 'READY';
+    toastTime -= dt;
+    if (toastTime <= 0)
+        el('toast').textContent = '';
+    scene.render(state, angle, dt);
+    requestAnimationFrame(frame);
 }
-async function load(text:string){try{const parsed=parseTrace(text);clearTimeout(timer);arena.reset();rows=parsed;cursor=0;replayOutcome=undefined;replayTerminal=undefined;mode='replay';session=undefined;obs=undefined;phase=parsed[0].phase;obs=parsed[0].observation||parsed[0].obs;playing=true;busy=false;replayDone=false;last='';caption='';error=parsed.some(r=>r.observation??r.obs)?'Offline recorded observations. Opponent stamina is shown only as its public band.':'Action-only rows animate recorded actions; missing observations remain unknown.';render();step();}catch(e){error=String(e);render();}}
-async function loadURL(url:string){try{const r=await fetch(url);if(!r.ok)throw new Error(`HTTP ${r.status}`);await load(await r.text());}catch(e){error=`Trace load failed: ${e}`;render();}}
-function step(){if(busy||mode!=='replay'||replayDone)return;if(cursor>=rows.length){phase='EPILOGUE';replayDone=true;playing=false;render();return;}
- const first=rows[cursor++],group=[first];
- // A player-1 commit precedes player-0 resolution. Keep both in one timed exchange.
- if(first.phase==='DUEL'&&first.actor===1&&rows[cursor]?.phase==='DUEL'&&rows[cursor].actor===0)group.push(rows[cursor++]);
- const facts=[...group].reverse().map(s=>s.observation??s.obs).find(Boolean);replayBefore=facts??obs;obs=facts;phase=first.phase;replayAfter=group.at(-1)?.after;replayOutcome=group.at(-1)?.outcome??replayOutcome;replayTerminal=group.at(-1)?.terminal??replayTerminal;
- const active=group.find(s=>s.actor===0)||first;caption=active.intent??active.parsed?.intent??'';badge=sourceBadge(active.source);const wait=Math.max(0,...group.map(s=>s.latency_ms??0));latency=wait?`paused for model ${(wait/1000).toFixed(1)} s`:'no recorded model pause';last=group.map(s=>`${s.actor===0?'ROLAND':'VALERIUS'}: ${s.parsed?.action??'unparsed'}`).join(' | ');busy=true;pending=group;replayStage='wait';remaining=wait/1000;manual=!playing;render();
-}
-function bind(){ui.querySelectorAll<HTMLElement>('[data-mode]').forEach(b=>b.onclick=()=>{if(b.dataset.mode==='play')startPlay();else{clearTimeout(timer);playing=false;busy=false;mode='title';arena.reset();obs=undefined;render();}});ui.querySelectorAll<HTMLElement>('[data-action]').forEach(b=>b.onclick=()=>act(b.dataset.action!));ui.querySelectorAll<HTMLElement>('[data-select]').forEach(b=>b.onclick=()=>{selected=b.dataset.select!;render()});
- const click=(id:string,fn:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=fn};click('enter',startPlay);click('confirm',()=>act(selected));click('sample',()=>void loadURL(`${base}traces/sample.jsonl`));click('toggle',()=>{manual=false;playing=!playing;render();if(playing)step()});click('step',step);
- const file=document.querySelector<HTMLInputElement>('#file');if(file)file.onchange=()=>{const f=file.files?.[0];if(f)void f.text().then(load)};
- const sel=document.querySelector<HTMLSelectElement>('#speed');if(sel)sel.onchange=()=>speed=Number(sel.value);
-}
-window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;if(e.repeat)return;if(e.key==='Enter'){e.preventDefault();if(mode==='title')startPlay();else if(mode==='play'){if(phase==='HEARING')act('CONTINUE');else if(phase==='DUEL'&&selected)act(selected);}else step();}if(mode==='play'&&phase==='DUEL'&&!busy){const a=['STRIKE','BASH','GUARD','RECOVER','SIDESTEP'][Number(e.key)-1];if(a&&session!.legal().includes(a)){selected=a;render()}}});
-render();void arena.load().catch(e=>{error=`Asset loading failed: ${e}`;render()});const trace=new URLSearchParams(location.search).get('trace');if(trace)void loadURL(trace);
+requestAnimationFrame(frame);

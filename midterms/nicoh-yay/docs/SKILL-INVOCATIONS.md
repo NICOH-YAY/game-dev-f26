@@ -1,13 +1,6 @@
-# Skill invocations
+# Actual skill use
+2026-10-25: Read and applied repository `.claude/skills/rule-change/SKILL.md` and the former scoped rule-change skill before replacement: map and tests written first, checks and handoff prepared. Nicoh's replacement request supplies the design decision. Initial `npm test` failed to resolve the not-yet-created sim module (suite import failure, not individual behavior failures). No claim of behavior-level red tests for the initial replacement.
 
-Record actual uses only; a skill's existence is not evidence of use.
+2026-10-25: Read former scoped balance-check skill. Its 3,520 combat episodes, personas and X2 restrictions concern the removed game. Did not invoke or relabel that matrix. Nicoh explicitly replaced the game and requested 32-action tower reachability as prototype validation. No model calls made.
 
-| Date | Session/tool | Skill | Task | Outcome |
-|---|---|---|---|---|
-| 2026-10-24 | Codex implementation session / shell + Vitest | rule-change | X2 preregistration, posterior report regression and runtime config | Mapped design rows; failing tests observed before implementation (evidence selector assertion added afterward, disclosed in handoff); regression/BUGLOG; tests/typecheck and non-X2 matrix; different-session review pending |
-| 2026-10-24 | Codex implementation session / npm balance | balance-check | Fresh S1/S2/S3/X1 matrix, provenance and criteria | 3,520 episodes per run, zero calls; (a) FAIL S2/Sentinel, (b) PASS; X2 excluded; no tuning or approval |
-
-Renderer session 2026-10-24: read the scoped rule-change and balance-check
-instructions to assess applicability. Neither workflow was invoked: no engine,
-rule, observation interface, outcome or evaluation report changed, and no
-balance matrix was run. No invocation row is claimed for reading instructions.
+2026-10-25: Read computer-use skill to attempt browser verification. In-app browser unavailable; inventory returned zero apps and zero browsers. Browser visual/input verification remains unperformed; no human playtest claimed.

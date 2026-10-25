@@ -1,4 +1,4 @@
-name: Trial by Combat
+name: Vaulting Ambition
 on:
   pull_request:
     paths: ['midterms/nicoh-yay/**', '.github/workflows/midterm-nicoh-yay.yml']
