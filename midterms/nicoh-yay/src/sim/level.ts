@@ -1,75 +1,30 @@
-import chunks from './tower.json' with { type: 'json' };
-export interface Box {
-    id: string;
+import data from './tower.json' with { type: 'json' };
+export interface Vec {
     x: number;
     y: number;
-    w: number;
-    h: number;
+    z: number;
 }
-export interface Level {
-    solids: Box[];
-    start: {
-        x: number;
-        y: number;
-    };
-    crown: {
-        x: number;
-        y: number;
-    };
-    sections: {
+export interface Box {
+    id: string;
+    min: Vec;
+    max: Vec;
+    material: string;
+    checkpoint?: boolean;
+    goal?: boolean;
+}
+export interface Course {
+    spawn: Vec;
+    stages: {
         name: string;
         y: number;
     }[];
+    boxes: Box[];
 }
-export function parseTower(input: unknown): Level {
-    if (!Array.isArray(input) || input.length === 0)
-        throw Error('Tower needs chunks');
-    const solids: Box[] = [];
-    const starts: {
-        x: number;
-        y: number;
-    }[] = [];
-    const crowns: {
-        x: number;
-        y: number;
-    }[] = [];
-    const sections: Level['sections'] = [];
-    let width = 0;
-    let previous = -Infinity;
-    for (const [ci, c] of input.entries()) {
-        if (!c || typeof c.name !== 'string' || !Number.isInteger(c.baseY) || c.baseY <= previous || !Array.isArray(c.rows) || c.rows.length < 2)
-            throw Error('Malformed chunk');
-        previous = c.baseY;
-        sections.push({ name: c.name, y: c.baseY });
-        if (!width)
-            width = c.rows[0]?.length;
-        if (!width || width % 2 === 0)
-            throw Error('Odd nonempty width required');
-        for (const [ri, row] of c.rows.entries()) {
-            if (typeof row !== 'string' || row.length !== width || /[^.#SC]/.test(row))
-                throw Error('Invalid chunk row');
-            const y = c.baseY + c.rows.length - 2 - ri;
-            for (let col = 0; col < width; col++) {
-                const x = col - (width - 1) / 2;
-                if (row[col] === '#') {
-                    let end = col + 1;
-                    while (row[end] === '#')
-                        end++;
-                    solids.push({ id: `${ci}:${ri}:${col}`, x: x - .5, y, w: end - col, h: 1 });
-                    col = end - 1;
-                }
-                else if (row[col] === 'S')
-                    starts.push({ x, y });
-                else if (row[col] === 'C')
-                    crowns.push({ x, y: y + 1 });
-            }
-        }
-    }
-    if (starts.length !== 1 || crowns.length !== 1)
-        throw Error('Exactly one start and crown required');
-    const start = starts[0];
-    if (!solids.some(b => start.x >= b.x && start.x <= b.x + b.w && start.y === b.y + b.h))
-        throw Error('Start must stand on a solid');
-    return { solids, start, crown: crowns[0], sections };
+export const course: Course = data;
+export function validateCourse(value: unknown): value is Course {
+    const c = value as Course;
+    const vec = (v: Vec) => !!v && [v.x, v.y, v.z].every(Number.isFinite);
+    return !!c && vec(c.spawn) && Array.isArray(c.stages) && c.stages.length === 5 && c.stages.every(s => !!s && typeof s.name === 'string' && Number.isFinite(s.y)) && Array.isArray(c.boxes) && c.boxes.length > 0 && new Set(c.boxes.map(b => b?.id)).size === c.boxes.length && c.boxes.every(b => !!b && typeof b.id === 'string' && typeof b.material === 'string' && vec(b.min) && vec(b.max) && (['x', 'y', 'z'] as const).every(k => b.min[k] < b.max[k])) && c.boxes.filter(b => b.checkpoint).length === 1 && c.boxes.filter(b => b.goal).length === 1;
 }
-export const tower = parseTower(chunks);
+if (!validateCourse(course))
+    throw new Error('Invalid course');

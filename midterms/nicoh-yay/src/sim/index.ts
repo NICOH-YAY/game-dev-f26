@@ -1,139 +1,163 @@
-import { tower, type Level } from './level.js';
+import { course, type Vec, type Box } from './level.js';
+export { course, validateCourse } from './level.js';
+export type { Vec } from './level.js';
+export const C = Object.freeze({ radius: .42, reach: 4.5, gravity: 20, maxLaunch: 14, minLaunch: 5, lookBias: .18, upBias: .22, nudge: 2.0, maxNudgeSpeed: 1.1, friction: 8, bendSeconds: .8, voidY: -16 });
 export const DT = 1 / 120;
-export const ANGLES = [25, 43, 61, 79, 101, 119, 137, 155] as const;
-export const POWERS = [.4, .6, .8, 1] as const;
-export interface Action {
-    angleIndex: number;
-    powerIndex: number;
-}
 export interface State {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    phase: 'standing' | 'runup' | 'airborne';
-    angle: number;
-    power: number;
-    runTicks: number;
-    ticks: number;
-    vaults: number;
-    falls: number;
-    best: number;
-    peak: number;
+    p: Vec;
+    v: Vec;
+    grounded: boolean;
+    plant: Vec | null;
+    bend: number;
+    checkpoint: Vec;
+    saved: boolean;
     won: boolean;
-    snapped: boolean;
-    falling: boolean;
-    landImpact: number;
-    support: string | null;
+    time: number;
+    bestHeight: number;
+    vaults: number;
+    landings: number;
 }
-export function reset(level: Level = tower): State {
-    return { ...level.start, vx: 0, vy: 0, phase: 'standing', angle: 61, power: 0, runTicks: 0, ticks: 0, vaults: 0, falls: 0, best: level.start.y, peak: level.start.y, won: false, snapped: false, falling: false, landImpact: 0, support: level.solids.find(b => b.y + b.h === level.start.y && level.start.x >= b.x && level.start.x <= b.x + b.w)?.id ?? null };
+export interface Action {
+    yawBucket: number;
+    pitchBucket: number;
+    bendBucket: number;
 }
-export function legal_actions(s: State): Action[] { return s.phase === 'standing' && !s.won ? ANGLES.flatMap((_, angleIndex) => POWERS.map((_, powerIndex) => ({ angleIndex, powerIndex }))) : []; }
-export function launch(s: State, angle: number, power: number): State {
-    if (s.phase !== 'standing' || s.won || !Number.isFinite(angle) || angle < 25 || angle > 155 || !Number.isFinite(power) || power < 0 || power > 1)
-        throw Error('Illegal vault');
-    return { ...s, phase: 'runup', angle, power, peak: s.y, falling: false, runTicks: 24, vaults: s.vaults + 1, snapped: power >= .9 && Math.min(angle, 180 - angle) < 35, landImpact: 0 };
+export const add = (a: Vec, b: Vec): Vec => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z });
+export const scale = (a: Vec, n: number): Vec => ({ x: a.x * n, y: a.y * n, z: a.z * n });
+export const sub = (a: Vec, b: Vec) => add(a, scale(b, -1));
+export const length = (a: Vec) => Math.hypot(a.x, a.y, a.z);
+export const unit = (a: Vec): Vec => scale(a, 1 / (length(a) || 1));
+const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
+export function reset(): State { return { p: { ...course.spawn }, v: { x: 0, y: 0, z: 0 }, grounded: true, plant: null, bend: 0, checkpoint: { ...course.spawn }, saved: false, won: false, time: 0, bestHeight: 0, vaults: 0, landings: 0 }; }
+export function respawn(s: State, bottom = false): State { return bottom ? reset() : { ...s, p: { ...s.checkpoint }, v: { x: 0, y: 0, z: 0 }, grounded: true, plant: null, bend: 0, won: false }; }
+// Camera position is sphere center; all rays and contacts use this same eye.
+export function raycast(origin: Vec, dir: Vec) {
+    const d = unit(dir);
+    let nearest: {
+        point: Vec;
+        distance: number;
+        box: Box;
+    } | null = null;
+    for (const box of course.boxes) {
+        let lo = 0, hi: number = C.reach;
+        for (const k of ['x', 'y', 'z'] as const) {
+            if (Math.abs(d[k]) < 1e-9) {
+                if (origin[k] < box.min[k] || origin[k] > box.max[k]) {
+                    hi = -1;
+                    break;
+                }
+            }
+            else {
+                const a = (box.min[k] - origin[k]) / d[k], b = (box.max[k] - origin[k]) / d[k];
+                lo = Math.max(lo, Math.min(a, b));
+                hi = Math.min(hi, Math.max(a, b));
+            }
+        }
+        if (hi >= lo && lo > 1e-6 && (!nearest || lo < nearest.distance))
+            nearest = { point: add(origin, scale(d, lo)), distance: lo, box };
+    }
+    return nearest;
 }
-export function tick(input: State, level: Level = tower): State {
+export function plant(s: State, look: Vec): State { const hit = raycast(s.p, look); return hit ? { ...s, plant: { ...hit.point }, bend: 0 } : s; }
+export function simulateLaunch(s: State, plantPoint: Vec, bend: number, lookDir: Vec): State {
+    const away = unit(sub(s.p, plantPoint));
+    const dir = unit(add(add(away, scale(unit(lookDir), C.lookBias)), { x: 0, y: C.upBias, z: 0 }));
+    return { ...s, v: scale(dir, C.minLaunch + (C.maxLaunch - C.minLaunch) * clamp(bend, 0, 1)), plant: null, bend: 0, grounded: false, vaults: s.vaults + 1 };
+}
+export function release(s: State, look: Vec): State { return s.plant ? simulateLaunch(s, s.plant, s.bend, look) : s; }
+export function tick(input: State, nudge: Vec = { x: 0, y: 0, z: 0 }): State {
     if (input.won)
-        return { ...input };
-    const s = { ...input, ticks: input.ticks + 1, landImpact: 0 };
-    if (s.phase === 'standing')
-        return s;
-    const dir = Math.cos(s.angle * Math.PI / 180) > 0 ? 1 : -1;
-    if (s.phase === 'runup') {
-        // Run-up is clamped to the supporting ledge; planting always starts from solid ground.
-        const support = level.solids.find(b => b.id === s.support);
-        if (support)
-            s.x = Math.max(support.x + .24, Math.min(support.x + support.w - .24, s.x + dir * (1 + s.power) * DT));
-        if (--s.runTicks > 0)
-            return s;
-        s.phase = 'airborne';
-        s.support = null;
-        const speed = 7 + 6 * s.power;
-        const radians = s.angle * Math.PI / 180;
-        s.vx = s.snapped ? dir * 2.8 : Math.cos(radians) * speed;
-        s.vy = s.snapped ? 2 : Math.sin(radians) * speed;
+        return input;
+    let s: State = { ...input, p: { ...input.p }, v: { ...input.v }, time: input.time + DT };
+    const wasGrounded = s.grounded;
+    s.grounded = false;
+    // Nudge acceleration is capped independently of vault momentum.
+    for (const k of ['x', 'z'] as const) {
+        const a = clamp(nudge[k], -1, 1) * C.nudge;
+        if (Math.abs(s.v[k]) < C.maxNudgeSpeed || a * s.v[k] < 0)
+            s.v[k] += a * DT;
+        if (wasGrounded)
+            s.v[k] *= Math.exp(-C.friction * DT);
     }
-    const oldX = s.x, oldY = s.y;
-    const half = .23, height = 1.15;
-    s.vy -= 12 * DT;
-    s.x += s.vx * DT;
-    s.y += s.vy * DT;
-    // Swept side and ceiling tests prevent tunneling at fixed-step speeds.
-    for (const b of level.solids) {
-        if (oldY + height > b.y + .001 && oldY < b.y + b.h - .001) {
-            if (s.vx > 0 && oldX + half <= b.x + .001 && s.x + half > b.x) {
-                s.x = b.x - half;
-                s.vx = -Math.abs(s.vx) * .38;
-                s.vy = Math.min(s.vy, -.6);
+    s.v.y -= C.gravity * DT;
+    // Four substeps plus closest-point sphere resolution prevent thin-box tunneling.
+    for (let substep = 0; substep < 4; substep++) {
+        s.p = add(s.p, scale(s.v, DT / 4));
+        for (let pass = 0; pass < 3; pass++)
+            for (const b of course.boxes) {
+                if (s.p.x < b.min.x - C.radius || s.p.x > b.max.x + C.radius || s.p.y < b.min.y - C.radius || s.p.y > b.max.y + C.radius || s.p.z < b.min.z - C.radius || s.p.z > b.max.z + C.radius)
+                    continue;
+                const q: Vec = { x: clamp(s.p.x, b.min.x, b.max.x), y: clamp(s.p.y, b.min.y, b.max.y), z: clamp(s.p.z, b.min.z, b.max.z) };
+                let delta = sub(s.p, q), dist = length(delta);
+                if (dist >= C.radius)
+                    continue;
+                if (dist < 1e-9) {
+                    const faces = ([{ k: 'x', v: b.min.x, sign: -1 }, { k: 'x', v: b.max.x, sign: 1 }, { k: 'y', v: b.min.y, sign: -1 }, { k: 'y', v: b.max.y, sign: 1 }, { k: 'z', v: b.min.z, sign: -1 }, { k: 'z', v: b.max.z, sign: 1 }] as const).map(f => ({ ...f, d: Math.abs(s.p[f.k] - f.v) })).sort((a, b) => a.d - b.d);
+                    const f = faces[0];
+                    delta = { x: 0, y: 0, z: 0 };
+                    delta[f.k] = f.sign;
+                    s.p[f.k] = f.v + f.sign * C.radius;
+                    dist = C.radius;
+                }
+                else {
+                    delta = scale(delta, 1 / dist);
+                    s.p = add(s.p, scale(delta, C.radius - dist));
+                }
+                const vn = s.v.x * delta.x + s.v.y * delta.y + s.v.z * delta.z;
+                if (vn < 0)
+                    s.v = sub(s.v, scale(delta, vn));
+                if (delta.y > .65) {
+                    s.grounded = true;
+                    if (b.checkpoint && !s.saved) {
+                        s.saved = true;
+                        s.checkpoint = { x: (b.min.x + b.max.x) / 2, y: b.max.y + C.radius, z: (b.min.z + b.max.z) / 2 };
+                    }
+                    if (b.goal)
+                        s.won = true;
+                }
             }
-            else if (s.vx < 0 && oldX - half >= b.x + b.w - .001 && s.x - half < b.x + b.w) {
-                s.x = b.x + b.w + half;
-                s.vx = Math.abs(s.vx) * .38;
-                s.vy = Math.min(s.vy, -.6);
+    }
+    if (s.grounded && !wasGrounded)
+        s.landings++;
+    if (s.plant) {
+        if (length(sub(s.p, s.plant)) > C.reach + .5) {
+            s.plant = null;
+            s.bend = 0;
+        }
+        else
+            {
+                const toward = unit(sub(s.plant, s.p));
+                const push = Math.max(0, nudge.x * toward.x + nudge.z * toward.z);
+                s.bend = clamp(s.bend + DT / C.bendSeconds + push * DT * .08, 0, 1);
             }
-        }
-        if (s.x + half > b.x && s.x - half < b.x + b.w && s.vy > 0 && oldY + height <= b.y && s.y + height >= b.y) {
-            s.y = b.y - height;
-            s.vy = -.5;
-        }
     }
-    if (s.vy <= 0) {
-        const tops = level.solids.filter(b => s.x + half > b.x && s.x - half < b.x + b.w && oldY >= b.y + b.h - .001 && s.y <= b.y + b.h).sort((a, b) => (b.y + b.h) - (a.y + a.h));
-        if (tops.length) {
-            const b = tops[0];
-            s.landImpact = -s.vy;
-            s.y = b.y + b.h;
-            s.vx = 0;
-            s.vy = 0;
-            s.phase = 'standing';
-            s.support = b.id;
-            s.falling = false;
-        }
-    }
-    s.best = Math.max(s.best, s.y);
-    s.peak = Math.max(s.peak, s.y);
-    if (s.phase === 'airborne' && !s.falling && s.peak - s.y > 3) {
-        s.falls++;
-        s.falling = true;
-    }
-    // A fall outside the tower lands at the courtyard boundary rather than entering an endless void.
-    if (s.y < -8) {
-        s.x = level.start.x;
-        s.y = level.start.y;
-        s.vx = 0;
-        s.vy = 0;
-        s.phase = 'standing';
-        s.support = reset(level).support;
-        if (!s.falling)
-            s.falls++;
-        s.falling = false;
-    }
-    if (Math.abs(s.x - level.crown.x) < .9 && Math.abs(s.y - level.crown.y) < 1.3) {
-        s.won = true;
-        s.vx = 0;
-        s.vy = 0;
-    }
+    s.bestHeight = Math.max(s.bestHeight, s.p.y - C.radius);
+    if (s.p.y < C.voidY)
+        s = respawn(s);
     return s;
 }
-export function predictVault(s: State, angle: number, power: number, level: Level = tower): State[] {
-    let current = launch(s, angle, power);
-    const states = [current];
-    for (let n = 0; n < 1200 && current.phase !== 'standing' && !current.won; n++) {
-        current = tick(current, level);
-        states.push(current);
+export function direction(yawBucket: number, pitchBucket: number): Vec { const yaw = yawBucket * Math.PI * 2 / 16, pitch = -Math.PI / 2 + (pitchBucket + .5) * Math.PI / 8; return { x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) }; }
+export function legal_actions(s: State): Action[] { if (s.won || (!s.grounded && !s.plant))
+    return []; const out: Action[] = []; for (let y = 0; y < 16; y++)
+    for (let p = 0; p < 8; p++)
+        if (raycast(s.p, direction(y, p)))
+            for (let b = 0; b < 4; b++)
+                out.push({ yawBucket: y, pitchBucket: p, bendBucket: b }); return out; }
+export function step(s: State, a: Action): State {
+    if (!a || !Number.isInteger(a.yawBucket) || !Number.isInteger(a.pitchBucket) || !Number.isInteger(a.bendBucket) || a.yawBucket < 0 || a.yawBucket >= 16 || a.pitchBucket < 0 || a.pitchBucket >= 8 || a.bendBucket < 0 || a.bendBucket >= 4 || s.won || (!s.grounded && !s.plant))
+        return s;
+    const look = direction(a.yawBucket, a.pitchBucket), hit = raycast(s.p, look);
+    if (!hit)
+        return s;
+    let next = simulateLaunch(s, hit.point, (a.bendBucket + 1) / 4, look);
+    // A discrete action charges for its prescribed duration, then advances until landing.
+    next.time += C.bendSeconds * (a.bendBucket + 1) / 4;
+    for (let i = 0; i < 360; i++) {
+        next = tick(next);
+        if (next.grounded || next.won)
+            break;
     }
-    return states;
+    return next;
 }
-export function step(s: State, a: Action, level: Level = tower): State {
-    if (!legal_actions(s).some(x => x.angleIndex === a.angleIndex && x.powerIndex === a.powerIndex))
-        throw Error('Illegal discrete action');
-    const trace = predictVault(s, ANGLES[a.angleIndex], POWERS[a.powerIndex], level);
-    return trace[trace.length - 1];
-}
-export function observe(s: State, level: Level = tower) {
-    return { position: { x: s.x, y: s.y }, velocity: { x: s.vx, y: s.vy }, phase: s.phase, height: s.y, best: s.best, vaults: s.vaults, falls: s.falls, time: s.ticks * DT, section: level.sections.filter(x => s.y >= x.y).at(-1)?.name ?? 'Courtyard', ledges: level.solids.filter(b => Math.abs(b.y - s.y) < 14).map(b => ({ ...b })), crown: Math.abs(level.crown.y - s.y) < 14 ? { ...level.crown } : null, actions: legal_actions(s), outcome: outcome(s) };
-}
-export function outcome(s: State) { return s.won ? 'won' as const : 'playing' as const; }
+export function observe(s: State) { return { position: { ...s.p }, velocity: { ...s.v }, grounded: s.grounded, attached: s.plant ? { ...s.plant } : null, bend: s.bend, time: s.time, height: s.p.y - C.radius, checkpoint: s.saved, won: s.won, viewRays: Array.from({ length: 128 }, (_, i) => { const yawBucket = Math.floor(i / 8), pitchBucket = i % 8; const hit = raycast(s.p, direction(yawBucket, pitchBucket)); return { yawBucket, pitchBucket, hit: hit ? { point: { ...hit.point }, distance: hit.distance } : null }; }) }; }
+export function outcome(s: State) { return s.won ? 'won' : 'playing'; }

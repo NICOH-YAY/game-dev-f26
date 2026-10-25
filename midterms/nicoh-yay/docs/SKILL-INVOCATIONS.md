@@ -1,6 +1,7 @@
-# Actual skill use
-2026-10-25: Read and applied repository `.claude/skills/rule-change/SKILL.md` and the former scoped rule-change skill before replacement: map and tests written first, checks and handoff prepared. Nicoh's replacement request supplies the design decision. Initial `npm test` failed to resolve the not-yet-created sim module (suite import failure, not individual behavior failures). No claim of behavior-level red tests for the initial replacement.
+# Skill use for the first-person rebuild
 
-2026-10-25: Read former scoped balance-check skill. Its 3,520 combat episodes, personas and X2 restrictions concern the removed game. Did not invoke or relabel that matrix. Nicoh explicitly replaced the game and requested 32-action tower reachability as prototype validation. No model calls made.
+2026-10-25: Applied `.claude/skills/rule-change/SKILL.md`: wrote the scoped rule/source map and first-person tests before replacing the 2D sim. Initial execution: six first-person tests failed on absent 3D state/API; the old determinism check passed. Additional boundary/contact tests were added during implementation. No claim that every added test had a pre-implementation red run.
 
-2026-10-25: Read computer-use skill to attempt browser verification. In-app browser unavailable; inventory returned zero apps and zero browsers. Browser visual/input verification remains unperformed; no human playtest claimed.
+Read the computer-use skill while exploring browser verification; no UI actions were performed because the CUA browser inventory was empty (in-app browser unavailable). Native Windows automation was not used. No human playtest, agent delegation or model call occurred. Claude review remains pending.
+
+The Get Out variation skill does not apply to this independent midterm rebuild.

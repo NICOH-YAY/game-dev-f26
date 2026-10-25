@@ -1,131 +1,227 @@
+/// <reference types="vite/client" />
 import './style.css';
-import { reset, tick, launch, DT, observe, type State } from '../../src/sim/index.js';
+import { reset, tick, plant, release, respawn, raycast, DT, C, course, type State, type Vec } from '../../src/sim/index.js';
+import { turnView } from './controls.js';
 import { TowerScene } from './scene.js';
+import { FpsWindow, MAX_FRAME_DT, qualityStep, simulationFrame, type Resolution } from './performance.js';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const canvas = el<HTMLCanvasElement>('game');
-const overlay = el('overlay');
-const start = el<HTMLButtonElement>('start');
-let state: State = reset();
-let mode: 'title' | 'playing' | 'victory' = 'title';
-let angle = 61, charging = false, chargeTime = 0, power = 0;
-let accumulator = 0, last = performance.now(), toastTime = 0, best = 0, lastSaved = 0;
+const canvas = el<HTMLCanvasElement>('game'), overlay = el('overlay');
+const gpuMessage = 'Your browser is rendering 3D without the GPU. Enable hardware acceleration (Brave/Chrome: Settings > System > Use graphics acceleration when available, then relaunch) or try another browser.';
+function showGpuBanner() { el('gpu-banner').textContent = gpuMessage; el('gpu-banner').hidden = false; }
+let scene: TowerScene;
+try { scene = new TowerScene(canvas); }
+catch (error) { showGpuBanner(); el<HTMLButtonElement>('start').disabled = true; throw error; }
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); showGpuBanner(); menu(); });
+const fpsWindow = new FpsWindow();
+let qualityChecked = 0, lowFpsSince: number | null = null;
+const resolutionOption = el<HTMLSelectElement>('resolution');
+resolutionOption.onchange = () => {
+    scene.setResolution(resolutionOption.value as Resolution);
+    fpsWindow.reset(); lowFpsSince = null; qualityChecked = performance.now();
+};
+let state: State = reset(), started = false, paused = true, yaw = 0, pitch = -.9, sensitivity = 1, holding = false, acc = 0, last = performance.now(), bestHeight = 0, bestTime = 0, toastUntil = 0;
+let manualSteps = false;
+let hadPointerLock = false, rightDragging = false, dragX = 0, dragY = 0;
 const keys = new Set<string>();
 try {
-    const stored = Number(localStorage.getItem('vaulting-ambition-best'));
-    if (Number.isFinite(stored) && stored > 0)
-        best = stored;
+    const value = JSON.parse(localStorage.getItem('vaulting-ambition-3d') ?? '{}');
+    bestHeight = Number.isFinite(value.height) ? Math.max(0, value.height) : 0;
+    bestTime = Number.isFinite(value.time) ? Math.max(0, value.time) : 0;
 }
-catch { /* Storage may be blocked. */ }
-const scene = new TowerScene(canvas);
-const art = new Image();
-art.onload = () => { el('overlay').style.background = 'linear-gradient(90deg,#101a2bf5,#101a2bb0 50%,#101a2b55)'; el('overlay').style.isolation = 'isolate'; (document.querySelector('.title-art') as HTMLElement).style.backgroundImage = `url("${art.src}")`; };
-art.src = `${import.meta.env.BASE_URL}art/title.png`;
-function begin() { state = reset(); mode = 'playing'; overlay.hidden = true; el('controls').hidden = false; charging = false; chargeTime = 0; power = 0; accumulator = 0; keys.clear(); toast('COURTYARD ? AIM HIGH'); }
-start.addEventListener('click', begin);
-function toast(message: string) { el('toast').textContent = message; toastTime = 2.4; }
-function charge() { if (mode === 'playing' && state.phase === 'standing' && !charging) {
-    charging = true;
-    chargeTime = 0;
-    power = 0;
-} }
-function release() { if (!charging)
-    return; charging = false; if (mode === 'playing' && state.phase === 'standing') {
-    state = launch(state, angle, power);
-    if (state.snapped)
-        toast('SNAP! TOO BOLD.');
-} }
-canvas.addEventListener('pointermove', e => { if (mode === 'playing' && state.phase === 'standing')
-    angle = scene.pointerAngle(e.clientX, e.clientY, state); });
-canvas.addEventListener('pointerdown', e => { if (e.button === 0) {
-    canvas.setPointerCapture(e.pointerId);
-    charge();
-} });
-canvas.addEventListener('pointerup', e => { if (e.button === 0)
-    release(); });
-canvas.addEventListener('pointercancel', () => { charging = false; power = 0; });
-canvas.addEventListener('contextmenu', e => e.preventDefault());
-window.addEventListener('keydown', e => {
-    if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code))
-        e.preventDefault();
-    if (e.repeat)
-        return;
-    if (e.code === 'KeyR' && mode === 'playing') {
-        charging = false;
-        keys.clear();
-        if (window.confirm('Restart at the courtyard? Your current climb and timer will reset.'))
-            begin();
-        last = performance.now();
-        accumulator = 0;
-        return;
+catch { }
+const save = () => { try {
+    localStorage.setItem('vaulting-ambition-3d', JSON.stringify({ height: bestHeight, time: bestTime }));
+}
+catch { } };
+const look = (): Vec => ({ x: -Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) });
+const toast = (s: string) => { el('toast').textContent = s; toastUntil = performance.now() + 3000; };
+let audio: AudioContext | undefined;
+function sound(launch: boolean) {
+    try {
+        audio ??= new AudioContext();
+        void audio.resume();
+        const gain = audio.createGain(), filter = audio.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(launch ? 1800 : 300, audio.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(80, audio.currentTime + .3);
+        const buffer = audio.createBuffer(1, Math.floor(audio.sampleRate * .35), audio.sampleRate), samples = buffer.getChannelData(0);
+        // Deterministic synthesized rush: no downloaded sounds or random sim state.
+        for (let i = 0; i < samples.length; i++)
+            samples[i] = Math.sin(i * 1.73) * Math.sin(i * .137) * Math.cos(i * .931);
+        const source = audio.createBufferSource();
+        source.buffer = buffer;
+        gain.gain.setValueAtTime(launch ? .18 : .12, audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .32);
+        source.connect(filter).connect(gain).connect(audio.destination);
+        source.start();
     }
-    if ((e.code === 'Enter' || e.code === 'Space') && mode !== 'playing') {
-        begin();
-        return;
-    }
-    keys.add(e.code);
-    if (e.code === 'Space')
-        charge();
+    catch { }
+}
+function cancel() { rightDragging = false; holding = false; state = { ...state, plant: null, bend: 0 }; keys.clear(); acc = 0; }
+function menu() { paused = true; save(); cancel(); overlay.hidden = false; el('heading').textContent = state.won ? 'CROWN CLAIMED' : 'PAUSED'; el('start').textContent = state.won ? 'CLIMB AGAIN' : 'CLICK TO RESUME'; el('title').hidden = true; }
+function resume() {
+    started = true;
+    paused = false;
+    overlay.hidden = true;
+    el('title').hidden = true;
+    last = performance.now();
+    acc = 0;
+    void lock();
+}
+async function lock() {
+    try { await canvas.requestPointerLock?.(); }
+    catch { /* The game remains playable using fallback look. */ }
+}
+el('start').onclick = () => {
+    if (!started || state.won) { state = reset(); yaw = 0; pitch = -.9; }
+    resume();
+};
+document.addEventListener('pointerlockchange', () => {
+    rightDragging = false;
+    const locked = document.pointerLockElement === canvas;
+    if (!locked && hadPointerLock && started && !paused) menu();
+    else if (locked && paused) document.exitPointerLock?.();
+    hadPointerLock = locked;
 });
-window.addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'Space')
-    release(); });
-window.addEventListener('blur', () => { keys.clear(); charging = false; power = 0; accumulator = 0; });
-document.addEventListener('visibilitychange', () => { last = performance.now(); accumulator = 0; charging = false; keys.clear(); });
-const time = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
-function win() { mode = 'victory'; charging = false; overlay.hidden = false; el('controls').hidden = true; el('message').innerHTML = `Crown claimed. Ambition vindicated.<br>${time(state.ticks * DT)} ? ${state.vaults} vaults ? ${state.falls} falls`; start.textContent = 'CLIMB AGAIN ?'; (document.querySelector('.eyebrow') as HTMLElement).textContent = 'THE CROWN IS YOURS'; toast(''); }
-function frame(now: number) {
-    const dt = document.hidden ? 0 : Math.min((now - last) / 1000, .1);
-    last = now;
-    if (mode === 'playing') {
-        if (state.phase === 'standing') {
-            if (keys.has('KeyA') || keys.has('ArrowLeft'))
-                angle = Math.min(155, angle + dt * 65);
-            if (keys.has('KeyD') || keys.has('ArrowRight'))
-                angle = Math.max(25, angle - dt * 65);
-        }
-        if (charging) {
-            chargeTime += dt;
-            power = chargeTime < 1.05 ? chargeTime / 1.05 : .6 + .4 * Math.cos((chargeTime - 1.05) * 4.6);
-        }
-        accumulator += dt;
-        while (accumulator >= DT) {
-            const oldSection = observe(state).section;
-            state = tick(state);
-            accumulator -= DT;
-            if (state.landImpact > 0) {
-                scene.landing(state);
-                if (state.landImpact > 12)
-                    toast('A LONG WAY DOWN. STILL IN IT.');
+document.addEventListener('pointerlockerror', () => {
+    rightDragging = false;
+    if (!paused) toast('Mouse lock unavailable / Hold right mouse and drag to look');
+});
+document.addEventListener('mousemove', e => {
+    if (paused) return;
+    const locked = document.pointerLockElement === canvas;
+    if (!locked && !rightDragging) return;
+    const dx = locked ? e.movementX : e.clientX - dragX;
+    const dy = locked ? e.movementY : e.clientY - dragY;
+    dragX = e.clientX; dragY = e.clientY;
+    yaw -= dx * .002 * sensitivity;
+    pitch = Math.max(-1.52, Math.min(1.52, pitch - dy * .002 * sensitivity));
+});
+canvas.addEventListener('mousedown', e => {
+    if (e.button === 2 && !paused) {
+        e.preventDefault(); rightDragging = true; dragX = e.clientX; dragY = e.clientY;
+    }
+});
+document.addEventListener('mouseup', e => { if (e.button === 2) rightDragging = false; });
+canvas.addEventListener('mousedown', e => { if (e.button === 0 && !paused) {
+    holding = true;
+    state = plant(state, look());
+} });
+document.addEventListener('mouseup', e => { if (e.button !== 0)
+    return; holding = false; if (paused || !state.plant)
+    return; state = release(state, look()); scene.launch(); sound(true); });
+window.addEventListener('keydown', e => {
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyR', 'KeyF', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Escape'].includes(e.code)) e.preventDefault();
+    if (e.code === 'F3') { e.preventDefault(); if (!e.repeat) el('fps').hidden = !el('fps').hidden; return; }
+    if (e.code === 'Escape') {
+        if (started && !paused) { menu(); document.exitPointerLock?.(); }
+        return;
+    }
+    if (!paused) keys.add(e.code);
+});
+window.addEventListener('keyup', e => keys.delete(e.code));
+document.addEventListener('visibilitychange', () => { fpsWindow.reset(); lowFpsSince = null; if (document.hidden && started) {
+    document.exitPointerLock?.();
+    menu();
+} });
+window.addEventListener('blur', () => { if (started) {
+    document.exitPointerLock?.();
+    menu();
+} });
+el<HTMLInputElement>('sensitivity').oninput = e => { sensitivity = Number((e.target as HTMLInputElement).value); el('sensvalue').textContent = sensitivity.toFixed(1); };
+el('checkpoint').onclick = () => { started = true; state = respawn(state); cancel(); toast('Returned to checkpoint'); resume(); };
+el('bottom').onclick = () => { state = reset(); yaw = 0; pitch = -.9; cancel(); resume(); };
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+const format = (t: number) => `${Math.floor(t / 60).toString().padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+function advance(dt: number) {
+    if (!paused) {
+        const timing = simulationFrame(acc, dt);
+        acc = timing.remainder;
+        for (let step = 0; step < timing.steps; step++) {
+            ({ yaw, pitch } = turnView(yaw, pitch, keys, DT));
+            const prev = state;
+            const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS')), side = Number(keys.has('KeyD')) - Number(keys.has('KeyA'));
+            let nudge = { x: -Math.sin(yaw) * forward + Math.cos(yaw) * side, y: 0, z: -Math.cos(yaw) * forward - Math.sin(yaw) * side };
+            const n = Math.hypot(nudge.x, nudge.z);
+            if (n > 1)
+                nudge = { x: nudge.x / n, y: 0, z: nudge.z / n };
+            if (holding && !state.plant)
+                state = plant(state, look());
+            state = tick(state, nudge);
+            if (state.landings > prev.landings) {
+                scene.land(state.p);
+                sound(false);
             }
-            if (observe(state).section !== oldSection && state.y > 0)
-                toast(observe(state).section.toUpperCase());
+            if (state.saved && !prev.saved)
+                toast('CHECKPOINT SAVED / Pause to return here');
             if (state.won) {
-                win();
+                if (!bestTime || state.time < bestTime)
+                    bestTime = state.time;
+                save();
+                document.exitPointerLock?.();
+                menu();
+                el('message').textContent = `Summit in ${format(state.time)} / ${state.vaults} vaults`;
                 break;
             }
         }
-    }
-    best = Math.max(best, state.best);
-    if (best > lastSaved + .1) {
-        try {
-            localStorage.setItem('vaulting-ambition-best', String(best));
-            lastSaved = best;
-        }
-        catch {
-            lastSaved = best;
+        if (state.bestHeight > bestHeight) {
+            bestHeight = state.bestHeight;
         }
     }
-    const o = observe(state);
-    el('section').textContent = o.section.toUpperCase();
-    el('height').textContent = `HEIGHT ${Math.max(0, Math.floor(state.y))}m / BEST ${Math.floor(best)}m`;
-    el('stats').textContent = `${time(state.ticks * DT)} ? ${state.vaults} VAULTS ? ${state.falls} FALLS`;
-    el('angle').textContent = `${Math.round(angle)}?`;
-    el('power').style.width = `${power * 100}%`;
-    el('power').style.background = power >= .9 ? '#df8674' : '#dbb86d';
-    el('powerLabel').textContent = state.phase === 'runup' ? 'PLANTING' : state.phase === 'airborne' ? (state.snapped ? 'SNAPPED' : 'COMMITTED') : charging ? `${Math.round(power * 100)}%` : 'READY';
-    toastTime -= dt;
-    if (toastTime <= 0)
+}
+function frame(now: number) {
+    const elapsed = Math.max(0, (now - last) / 1000);
+    const dt = Math.min(elapsed, MAX_FRAME_DT);
+    last = now;
+    if (!manualSteps) advance(elapsed);
+    if (!document.hidden) {
+        const fps = fpsWindow.sample(now);
+        if (fps !== null) {
+            el('fps').textContent = `${fps.toFixed(0)} FPS / ${scene.resolution} / F3`;
+            if (now - qualityChecked >= 1000) {
+                qualityChecked = now;
+                const next = qualityStep(scene.resolution, fps);
+                if (next !== scene.resolution) {
+                    scene.setResolution(next); resolutionOption.value = next;
+                    toast(`Resolution lowered to ${next} for performance`);
+                    fpsWindow.reset(); lowFpsSince = null;
+                } else if (scene.resolution === '320x180' && fps < 15) {
+                    lowFpsSince ??= now;
+                    if (now - lowFpsSince >= 3000) showGpuBanner();
+                } else lowFpsSince = null;
+            }
+        }
+    } else { fpsWindow.reset(); lowFpsSince = null; }
+    const hit = raycast(state.p, look());
+    el('lookmode').textContent = document.pointerLockElement === canvas ? 'LOOK: Mouse / Esc: pause' : 'LOOK: Hold right mouse + drag / Q E or left/right arrows: turn / R F or up/down arrows: pitch / Esc: pause';
+    el('crosshair').classList.toggle('reach', !!hit);
+    el('bend').style.width = `${state.bend * 100}%`;
+    el('timer').textContent = format(state.time);
+    el('stage').textContent = [...course.stages].reverse().find(s => state.p.y >= s.y)?.name.toUpperCase() ?? 'GATE';
+    el('stats').textContent = `HEIGHT ${Math.max(0, state.p.y - C.radius).toFixed(1)}m / 33m\nBEST ${bestHeight.toFixed(1)}m / TIME ${bestTime ? format(bestTime) : '--'}\nVAULTS ${state.vaults} / CHECKPOINT ${state.saved ? 'SAVED' : '--'}`;
+    el('hint').textContent = state.plant ? 'PLANTED / Hold to bend / Look to steer / Release to launch' : hit ? 'IN REACH / Hold left mouse to plant' : 'Aim at a nearby surface / Look down to vault';
+    if (now > toastUntil)
         el('toast').textContent = '';
-    scene.render(state, angle, dt);
+    scene.render(state, yaw, pitch, hit?.point ?? null, dt);
     requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+if (import.meta.env.DEV) {
+    const debug = {
+        getState: () => structuredClone({ ...state, yaw, pitch, paused }),
+        setView: (newYaw: number, newPitch: number) => {
+            if (!Number.isFinite(newYaw) || !Number.isFinite(newPitch)) return;
+            yaw = newYaw; pitch = Math.max(-1.52, Math.min(1.52, newPitch));
+        },
+        plant: () => { if (!paused) { holding = true; state = plant(state, look()); } },
+        release: () => { holding = false; if (!paused && state.plant) state = release(state, look()); },
+        // First step takes over the clock from RAF; step(0) enables manual QA timing.
+        step: (ms: number) => {
+            if (!Number.isFinite(ms) || ms < 0) return;
+            if (!manualSteps) { manualSteps = true; acc = 0; }
+            advance(ms / 1000);
+        },
+    };
+    (window as Window & { __va?: typeof debug }).__va = debug;
+}

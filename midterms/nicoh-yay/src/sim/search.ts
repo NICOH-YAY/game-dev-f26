@@ -1,24 +1,32 @@
-import { reset, legal_actions, step, type State, type Action } from './index.js';
-import { tower, type Level } from './level.js';
-// Development-only full-map search. Never supplied to a player controller.
-export function searchTower(level: Level = tower) {
-    const queue: {
+import { reset, legal_actions, step, type Action, type State } from './index.js';
+// Development-only beam search. Uses only legal actions; never imported by the browser.
+export function searchCourse(target: 'checkpoint' | 'goal', budget = 24, width = 60) {
+    let beam: {
         s: State;
         actions: Action[];
-    }[] = [{ s: reset(level), actions: [] }];
-    const visited = new Set<string>();
-    for (let i = 0; i < queue.length && i < 30000; i++) {
-        const { s, actions } = queue[i];
-        if (s.won)
-            return { actions, visited: i, sections: level.sections.filter(section => s.best >= section.y).map(x => x.name) };
-        for (const action of legal_actions(s)) {
-            const next = step(s, action, level);
-            const key = `${next.support}:${Math.round(next.x * 5)}:${next.won}`;
-            if (visited.has(key))
-                continue;
-            visited.add(key);
-            queue.push({ s: next, actions: [...actions, action] });
-        }
+    }[] = [{ s: reset(), actions: [] }];
+    const seen = new Set<string>();
+    let expanded = 0;
+    for (let depth = 0; depth < budget; depth++) {
+        const next: typeof beam = [];
+        for (const node of beam)
+            for (const a of legal_actions(node.s)) {
+                const s = step(node.s, a);
+                expanded++;
+                const actions = [...node.actions, a];
+                if (target === 'goal' ? s.won : s.saved)
+                    return { reached: true, actions, expanded, state: s };
+                const key = [s.p.x, s.p.y, s.p.z].map(v => Math.round(v * 2)).join(',');
+                if (seen.has(key))
+                    continue;
+                seen.add(key);
+                next.push({ s, actions });
+            }
+        next.sort((a, b) => b.s.p.y - a.s.p.y);
+        beam = next.slice(0, width);
+        if (!beam.length)
+            break;
     }
-    throw Error(`No crown route found (${queue.length} states)`);
+    return { reached: false, actions: [] as Action[], expanded, state: reset() };
 }
+export function searchCheckpoint() { return searchCourse('checkpoint', 12, 60); }

@@ -1,19 +1,12 @@
-# Observed local verification ? 2026-10-25
-Environment: Windows, Node v24.18.1. Commands ran in `midterms/nicoh-yay/`. No network inside tests, no model/provider calls.
+# Verification: first-person rebuild, 2026-10-25
 
-`npm ci --cache .npm-cache`: success. `npm test`: 12 passed. `npm run typecheck`: success. `npm run web:build`: success, with Vite's >500kB bundle-size warning.
+- Test-first run before replacing engine: 6 failures / 1 pass. Missing first-person state/functions caused the failures; the old determinism test already passed.
+- Final `npm test`: 15 deterministic Vitest tests (see final run output). Includes SHA-256 repeated input trace, floor/wall impulse equation and cap, charge/midair plant, floor/wall/ceiling sliding contacts, void/checkpoint/bottom/goal, nudge limit, invalid action no-op, copied observations/local legal rays, malformed course and replayed search routes.
+- `npm run typecheck`: pass.
+- `npm run web:build`: pass. Vite warns about a ~619kB Three.js bundle; it is a performance warning, not a failed build.
+- Beam width 60, at most 12 checkpoint / 24 summit layers. Checkpoint: 47,000 expanded actions, 5 vaults. Summit: 125,436 expanded actions, 11 vaults. Routes were replayed legally through the exact integrator. Actions, final states and SHA-256 hashes are in SEARCH-ROUTES.json. No full-map data is passed to the player interface.
+- Browser visual/input verification: unavailable. CUA reports no browsers/apps. No claim of verified pointer lock, rendering quality, sound or human enjoyment.
+- Required root `python -m unittest discover -s tests -v`: 36 tests, 4 errors. test_diagnose/test_providers cannot import anthropic; two minigame symlink tests fail with Windows privilege error 1314. These concern the existing root environment; no Python code changed.
+- Required root `python -m course_game.setup_check --offline --headless`: SETUP INCOMPLETE. Python/Git/scripted fixture pass; GitHub authentication, Pyxel and deterministic root tests fail. The fixture was explicitly reported as fixture, with no live provider call; no live evaluation is claimed.
 
-## Exact search replay
-Development-only breadth-first search over all 32 angle/power choices from the start, pruning landed x to .2m. It found a route after 397 expanded states. Replay through the real sim returned `won`, 12 vaults, 1 fall, simulation time 17.591666666666665 seconds, feet height 36.449191384295204m. Courtyard, Battlements and Belfry crossed.
-
-Action pairs `(angleIndex, powerIndex)` in order:
-```
-(3,1) (4,1) (3,1) (4,1) (3,1) (4,3)
-(2,1) (5,1) (2,1) (5,1) (2,1) (4,1)
-```
-Indices map to angles `[25,43,61,79,101,119,137,155]` and powers `[.4,.6,.8,1]`. Each step includes the complete run-up and flight until landing or victory. This is deterministic software evidence, not an observed human run, speed record or difficulty assessment.
-
-HTTP smoke check: dev server returned 200 for the entry page, both web modules, Knight.glb, tower-square.glb, castle texture, and pixel font. This verifies serving, not rendered appearance or input behavior. Final Git path audit found no changes outside the authorized project folder and named workflow.
-
-## Unperformed
-Browser automation: unavailable (empty browser/app inventory). Human playtesting, artistic review, and Claude independent review: TODO. No live AI evaluation was requested or run.
+No commit, push, model call, new asset download or gate approval. Title art and retained asset files were not changed. Claude independent review and Nicoh playtesting remain TODO.

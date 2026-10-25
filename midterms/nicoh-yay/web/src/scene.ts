@@ -1,182 +1,122 @@
 import * as T from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPixelatedPass } from 'three/addons/postprocessing/RenderPixelatedPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { tower } from '../../src/sim/level.js';
-import type { State } from '../../src/sim/index.js';
-const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
+import { renderSize, type Resolution } from './performance.js';
+import { course, type State, type Vec } from '../../src/sim/index.js';
+const v = (p: Vec) => new T.Vector3(p.x, p.y, p.z);
 export class TowerScene {
     readonly scene = new T.Scene();
-    readonly camera = new T.PerspectiveCamera(38, 1, .1, 180);
+    readonly camera = new T.PerspectiveCamera(78, 1, .04, 180);
     private renderer: T.WebGLRenderer;
-    private composer: EffectComposer;
-    private knight = new T.Group();
-    private body = new T.Group();
-    private lance = new T.Group();
-    private aim: T.Line;
-    private mixer?: T.AnimationMixer;
-    private idle?: T.AnimationAction;
-    private crown = new T.Group();
-    private particles: {
-        m: T.Mesh;
-        v: T.Vector3;
-        life: number;
-    }[] = [];
-    private shake = 0;
+    resolution: Resolution = '480x270';
+    private pole: T.Mesh;
+    private dot: T.Mesh;
+    private kick = 0;
     private clock = 0;
-    private cameraY = 5;
-    private fallback: T.Mesh;
-    private squash = 0;
+    private dust: {
+        mesh: T.Mesh;
+        life: number;
+        velocity: T.Vector3;
+    }[] = [];
     constructor(canvas: HTMLCanvasElement) {
         this.renderer = new T.WebGLRenderer({ canvas, antialias: false });
-        this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-        this.renderer.shadowMap.enabled = true;
-        this.scene.background = new T.Color('#243b52');
-        this.scene.fog = new T.Fog('#243b52', 35, 100);
-        this.scene.add(new T.HemisphereLight('#d0e8ff', '#45394a', 2.5));
-        const sun = new T.DirectionalLight('#ffe1ae', 3);
-        sun.position.set(-8, 22, 12);
+        this.renderer.setPixelRatio(1);
+        this.renderer.shadowMap.enabled = false;
+        this.scene.background = new T.Color('#182d40');
+        this.scene.fog = new T.Fog('#182d40', 35, 105);
+        this.scene.add(new T.HemisphereLight('#c7edff', '#3e3349', 2.3));
+        const sun = new T.DirectionalLight('#ffe0ad', 3);
+        sun.position.set(-10, 40, 8);
         this.scene.add(sun);
-        this.composer = new EffectComposer(this.renderer);
-        const pixel = new RenderPixelatedPass(3, this.scene, this.camera);
-        pixel.normalEdgeStrength = .5;
-        pixel.depthEdgeStrength = .35;
-        this.composer.addPass(pixel);
-        this.composer.addPass(new OutputPass());
-        for (const b of tower.solids) {
-            this.box(b.w, b.h, 2.3, b.x + b.w / 2, b.y + b.h / 2, 0, '#687b89');
-            this.box(b.w + .08, .12, 2.4, b.x + b.w / 2, b.y + b.h + .01, 0, '#b1b7a6');
-            for (let x = b.x + .5; x < b.x + b.w; x += 1.5)
-                this.box(.05, .6, .02, x, b.y + .45, 1.17, '#455e73');
-        }
-        // Backdrop masonry lives behind the gameplay plane, never in the collider list.
-        for (let y = -2; y < 43; y += 4) {
-            this.box(13, 3.96, 1, 0, y, -5, '#30495e');
-            this.box(1.2, 4, 4, -7, y, -5, '#3d5668');
-            this.box(1.2, 4, 4, 7, y, -5, '#3d5668');
-            for (const x of [-4, 0, 4]) {
-                this.box(.7, 1.6, .1, x, y + .5, -4.45, '#1b2c41');
-                this.box(.9, .15, .3, x, y - .35, -4.3, '#71818a');
+        const colors: Record<string, string> = { slate: '#344e65', stone: '#8e9c9c', cyber: '#42568c', teal: '#43d6bc', gold: '#f5c665' };
+        const boxes = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), new T.MeshLambertMaterial(), course.boxes.length);
+        const transform = new T.Object3D();
+        this.scene.add(boxes);
+        for (const [index, b] of course.boxes.entries()) {
+            const size = v(b.max).sub(v(b.min)), center = v(b.min).add(v(b.max)).multiplyScalar(.5);
+            transform.position.copy(center);
+            transform.scale.copy(size);
+            transform.updateMatrix();
+            boxes.setMatrixAt(index, transform.matrix);
+            boxes.setColorAt(index, new T.Color(colors[b.material] ?? '#869c9e'));
+            if (b.checkpoint || b.goal) {
+                const ring = new T.Mesh(new T.TorusGeometry(b.goal ? .65 : 1.2, .06, 6, 24), new T.MeshBasicMaterial({ color: b.goal ? '#ffe98c' : '#7effdc' }));
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.set(center.x, b.max.y + .03, center.z);
+                this.scene.add(ring);
+            }
+            if (b.goal) {
+                const crown = new T.Group();
+                for (let i = 0; i < 5; i++) {
+                    const tooth = new T.Mesh(new T.ConeGeometry(.15, .6, 4), new T.MeshLambertMaterial({ color: '#ffd875' }));
+                    tooth.position.set(Math.cos(i * Math.PI * 2 / 5) * .45, .4, Math.sin(i * Math.PI * 2 / 5) * .45);
+                    crown.add(tooth);
+                }
+                const base = new T.Mesh(new T.TorusGeometry(.5, .12, 6, 12), new T.MeshLambertMaterial({ color: '#ffd875' }));
+                base.rotation.x = Math.PI / 2;
+                crown.add(base);
+                crown.position.set(center.x, b.max.y + .8, center.z);
+                this.scene.add(crown);
             }
         }
-        for (const section of tower.sections) {
-            const pennant = this.box(.7, 2, .08, -6, section.y + 3, -3, '#a34f4c');
-            pennant.rotation.z = -.05;
-            this.box(.08, 2.5, .15, -6.5, section.y + 3.4, -3, '#c1a477');
-        }
-        this.fallback = this.box(.55, 1, .4, 0, .55, 0, '#9cb8cf');
-        this.scene.remove(this.fallback);
-        this.body.add(this.fallback);
-        this.knight.add(this.body);
-        this.scene.add(this.knight);
-        const shaft = new T.Mesh(new T.CylinderGeometry(.035, .05, 2.7, 5), new T.MeshToonMaterial({ color: '#d7b279' }));
-        shaft.rotation.z = Math.PI / 2;
-        shaft.position.x = 1.1;
-        this.lance.add(shaft);
-        const tip = new T.Mesh(new T.ConeGeometry(.13, .5, 4), new T.MeshToonMaterial({ color: '#d2e6ed' }));
-        tip.rotation.z = -Math.PI / 2;
-        tip.position.x = 2.7;
-        this.lance.add(tip);
-        this.lance.position.set(0, .65, .3);
-        this.knight.add(this.lance);
-        this.aim = new T.Line(new T.BufferGeometry(), new T.LineDashedMaterial({ color: '#f5d58a', dashSize: .18, gapSize: .13 }));
-        this.scene.add(this.aim);
-        this.crown.position.set(tower.crown.x, tower.crown.y + .65, 0);
-        this.scene.add(this.crown);
-        const ring = new T.Mesh(new T.CylinderGeometry(.42, .35, .25, 8), new T.MeshToonMaterial({ color: '#efc96c' }));
-        this.crown.add(ring);
-        for (let i = 0; i < 5; i++) {
-            const tip = new T.Mesh(new T.ConeGeometry(.13, .4, 4), ring.material);
-            tip.position.set(Math.cos(i * Math.PI * 2 / 5) * .36, .27, Math.sin(i * Math.PI * 2 / 5) * .36);
-            this.crown.add(tip);
-        }
+        this.dot = new T.Mesh(new T.SphereGeometry(.055, 8, 8), new T.MeshBasicMaterial({ color: '#88ffe1', depthTest: false }));
+        this.dot.renderOrder = 10;
+        this.scene.add(this.dot);
+        this.pole = new T.Mesh(new T.BufferGeometry(), new T.MeshLambertMaterial({ color: '#e1bd78' }));
+        this.pole.frustumCulled = false;
+        this.scene.add(this.pole);
         window.addEventListener('resize', () => this.resize());
         this.resize();
-        void this.load();
     }
-    private box(w: number, h: number, d: number, x: number, y: number, z: number, color: string) { const m = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshToonMaterial({ color })); m.position.set(x, y, z); this.scene.add(m); return m; }
-    private async load() {
-        const loader = new GLTFLoader();
-        try {
-            const g = await loader.loadAsync(asset('Knight.glb'));
-            const bounds = new T.Box3().setFromObject(g.scene);
-            const scale = 1.2 / (bounds.max.y - bounds.min.y);
-            g.scene.scale.setScalar(scale);
-            g.scene.position.y = -bounds.min.y * scale;
-            g.scene.traverse(o => { if (o instanceof T.Mesh) {
-                if (/Sword|Axe|Shield|Mug/.test(o.name))
-                    o.visible = false;
-                const old = Array.isArray(o.material) ? o.material[0] : o.material;
-                o.material = new T.MeshToonMaterial({ map: old.map, color: '#bad5e9' });
-            } });
-            this.fallback.visible = false;
-            this.body.add(g.scene);
-            this.mixer = new T.AnimationMixer(g.scene);
-            const clip = g.animations.find(c => c.name === 'Idle');
-            if (clip) {
-                this.idle = this.mixer.clipAction(clip);
-                this.idle.play();
-            }
-        }
-        catch (error) {
-            console.warn('Knight asset unavailable; using procedural knight', error);
-        }
-        try {
-            const g = await loader.loadAsync(asset('tower-square.glb'));
-            for (const x of [-12, 12]) {
-                const m = g.scene.clone(true);
-                m.position.set(x, -1, -8);
-                m.scale.set(3, 10, 3);
-                this.scene.add(m);
-            }
-        }
-        catch (error) {
-            console.warn('Castle decoration unavailable', error);
-        }
+    setResolution(resolution: Resolution) { this.resolution = resolution; this.resize(); }
+    private resize() {
+        const size = renderSize(this.resolution, innerWidth, innerHeight);
+        this.renderer.setSize(size.width, size.height, false);
+        this.camera.aspect = innerWidth / innerHeight;
+        this.camera.updateProjectionMatrix();
     }
-    private resize() { const w = innerWidth, h = innerHeight; this.renderer.setSize(w, h); this.composer.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
-    pointerAngle(clientX: number, clientY: number, s: State) {
-        const p = new T.Vector3(s.x, s.y + .6, 0).project(this.camera);
-        const dx = clientX - (p.x + 1) * innerWidth / 2;
-        const dy = (1 - p.y) * innerHeight / 2 - clientY;
-        return T.MathUtils.clamp(Math.atan2(Math.abs(dy), dx) * 180 / Math.PI, 25, 155);
-    }
-    landing(s: State) { this.squash = .16; this.shake = Math.min(.22, s.landImpact * .012); for (let i = 0; i < 12; i++) {
-        const m = this.box(.08, .08, .08, s.x, s.y + .05, .3, '#c1b8a4');
-        this.particles.push({ m, v: new T.Vector3(Math.cos(i * 2.4) * 2, 1 + i % 3 * .4, Math.sin(i * 2.4)), life: .45 });
+    launch() { this.kick = 1; }
+    land(p: Vec) { for (let i = 0; i < 12; i++) {
+        const mesh = new T.Mesh(new T.BoxGeometry(.06, .06, .06), new T.MeshBasicMaterial({ color: '#dfd4ac', transparent: true }));
+        mesh.position.copy(v(p));
+        mesh.position.y -= .35;
+        const a = i * Math.PI * 2 / 12;
+        this.dust.push({ mesh, life: .5, velocity: new T.Vector3(Math.cos(a) * 1.5, .8 + (i % 3) * .2, Math.sin(a) * 1.5) });
+        this.scene.add(mesh);
     } }
-    render(s: State, angle: number, dt: number) {
+    render(s: State, yaw: number, pitch: number, hit: Vec | null, dt: number) {
         this.clock += dt;
-        this.mixer?.update(dt);
-        this.knight.position.set(s.x, s.y, 0);
-        const direction = Math.cos((s.phase === 'standing' ? angle : s.angle) * Math.PI / 180) > 0 ? 1 : -1;
-        this.body.rotation.y = direction > 0 ? Math.PI / 2 : -Math.PI / 2;
-        this.body.rotation.z = s.phase === 'runup' ? -.16 * direction : s.phase === 'airborne' ? (s.snapped ? this.clock * 9 : Math.max(-.4, Math.min(.4, -s.vy * .035)) * direction) : 0;
-        this.body.position.y = s.phase === 'runup' ? Math.abs(Math.sin(this.clock * 33)) * .09 : -this.squash;
-        this.lance.visible = !s.snapped || s.phase === 'standing';
-        this.squash *= Math.exp(-dt * 14);
-        this.lance.rotation.z = s.phase === 'standing' ? -angle * Math.PI / 180 : s.phase === 'runup' ? -.5 * direction : .4 * direction;
-        this.aim.visible = s.phase === 'standing' && !s.won;
-        // A short plant-direction cue, deliberately not a predicted arc.
-        const r = angle * Math.PI / 180;
-        const start = new T.Vector3(s.x, s.y + .65, .4);
-        const end = start.clone().add(new T.Vector3(Math.cos(r) * 2.8, -Math.sin(r) * 2.8, 0));
-        this.aim.geometry.dispose();
-        this.aim.geometry = new T.BufferGeometry().setFromPoints([start, end]);
-        this.aim.computeLineDistances();
-        this.crown.rotation.y = this.clock;
-        this.crown.position.y = tower.crown.y + .65 + Math.sin(this.clock * 2) * .1;
-        this.particles = this.particles.filter(p => { p.life -= dt; p.v.y -= dt * 5; p.m.position.addScaledVector(p.v, dt); if (p.life <= 0) {
-            this.scene.remove(p.m);
-            p.m.geometry.dispose();
-            (p.m.material as T.Material).dispose();
-            return false;
-        } return true; });
-        this.cameraY = T.MathUtils.damp(this.cameraY, Math.max(4, s.y + 3.2), 5, dt);
-        this.shake *= Math.exp(-dt * 15);
-        this.camera.position.set(.7 + Math.sin(this.clock * 80) * this.shake, this.cameraY + 2, Math.max(25, 24 / this.camera.aspect));
-        this.camera.lookAt(0, this.cameraY, 0);
-        this.composer.render();
+        this.kick = Math.max(0, this.kick - dt * 3);
+        this.camera.position.copy(v(s.p));
+        this.camera.rotation.order = 'YXZ';
+        this.camera.rotation.set(pitch, yaw, 0);
+        this.camera.position.x += Math.sin(this.clock * 83) * this.kick * .018;
+        this.camera.position.y += Math.sin(this.clock * 67) * this.kick * .014;
+        this.camera.fov = 78 + this.kick * 7;
+        this.camera.updateProjectionMatrix();
+        this.camera.updateMatrixWorld();
+        this.dot.visible = !!hit && !s.plant;
+        if (hit)
+            this.dot.position.copy(v(hit));
+        const hand = new T.Vector3(.27, -.23, -.38).applyMatrix4(this.camera.matrixWorld);
+        const tip = s.plant ? v(s.plant) : new T.Vector3(.04, -.04, -3.5).applyMatrix4(this.camera.matrixWorld);
+        const mid = hand.clone().lerp(tip, .5);
+        mid.y -= s.bend * 1.1;
+        mid.add(new T.Vector3(.22 * s.bend, 0, 0).applyQuaternion(this.camera.quaternion));
+        const curve = new T.QuadraticBezierCurve3(hand, mid, tip);
+        this.pole.geometry.dispose();
+        this.pole.geometry = new T.TubeGeometry(curve, 12, .028, 4, false);
+        for (let i = this.dust.length - 1; i >= 0; i--) {
+            const d = this.dust[i];
+            d.life -= dt;
+            d.mesh.position.addScaledVector(d.velocity, dt);
+            d.velocity.y -= 3 * dt;
+            (d.mesh.material as T.MeshBasicMaterial).opacity = Math.max(0, d.life * 2);
+            if (d.life <= 0) {
+                this.scene.remove(d.mesh);
+                d.mesh.geometry.dispose();
+                (d.mesh.material as T.Material).dispose();
+                this.dust.splice(i, 1);
+            }
+        }
+        this.renderer.render(this.scene, this.camera);
     }
 }
