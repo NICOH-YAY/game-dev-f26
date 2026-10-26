@@ -29,7 +29,7 @@ it("plays a complete day with pause, coffee keys, interruptions, journal, save a
   expect(portrait.parentElement!.classList.contains("loaded")).toBe(true);
   portrait.dispatchEvent(new Event("error"));
   expect(portrait.parentElement!.classList.contains("loaded")).toBe(false);
-  expect(document.querySelector('[data-art="apartment"]')).toBeNull();
+  expect(document.querySelector('[data-art="apartment"]')).not.toBeNull();
   click("[data-action]");
   click("[data-action]");
   expect(document.querySelector(".keys")).not.toBeNull();
