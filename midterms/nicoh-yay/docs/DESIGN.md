@@ -1,47 +1,19 @@
-# Vaulting Ambition: first-person rebuild
+﻿# Design intent
 
-Nicoh remains Creative Director and Executive Producer. Implementation: Codex. Independent reviewer: Claude, pending. The rejected side-view prototype is replaced, with its scaffolding, licenses, assets, CI and title art retained.
+Nicoh is Creative Director. Small Change is a slice of Melanie’s ongoing life, adapting Richard Hofmeier’s Cart Life (2011). Her separation and custody concerns remain background pressures, rather than a win/loss condition. The player works, cares for Laura, and lives with the residue of small decisions. There is no morality score, praise banner, final run, punishment screen, or game over. Service has real timing and cash consequences but no displayed service score.
 
-## Reference and evidence
+Each day contains one morning dilemma, three interleaved cart dilemmas, 105 seconds of active coffee service, one evening dilemma, and a short first-person journal. Reading and choosing stop the service clock. Every fifth day reveals a chapter based on Laura’s closeness, trust, and self-reliance; play continues. Overnight expenses come from stock, groceries, rent and utilities. Debt is possible and never prevents continuing. Cash is described through the register rather than a numeric HUD.
 
-`observed`: [Refund This Game, Steam](https://store.steampowered.com/app/5070190/Refund_This_Game/), Cactile Games & dofhouse, accessed 2026-10-25. Its store description establishes 3D Getting Over It-style climbing and a pole that sticks to walls, bends and flings the player. [GamesRadar press coverage](https://www.gamesradar.com/games/platformer/after-valve-was-criticized-devs-back-steams-refund-policy-by-creating-a-2-hour-game-literally-called-refund-this-game-we-celebrate-players-right-to-refund/) identifies the first-person presentation and one checkpoint. These are store/press observations, not our own play session or a claim of reproducing the commercial game's exact physics. No code, sounds or assets from that game were used.
+Hidden state belongs to the engine: money, Laura’s closeness/self-reliance/trust, Melanie’s fatigue/normalization, trust for each regular, Ivo’s relationship, and the choice ledger. All choice effects are hidden. Conditions gate variants; fresh dilemmas are preferred, then seeded selection continues from the pool. Escalations require the corresponding prior ledger entry and cannot occur in the same day as their chain’s first temptation. A compromise can become ordinary wording on a later day. Scheduled callbacks arrive two days later in morning scenes; they are authored glimpses rather than diagnoses.
 
-`observed`, reported by Nicoh: Nicoh playtested the previous 2D side-view prototype and rejected aiming: "very bad, I can't aim it". No additional human observations are invented. Follow-up human playtest: TODO.
+The five new regulars are Martin (laid off, still dressing for work), Ada (student counting coins), Ruth (night nurse caring for her mother), Emil (two cups for a late wife), and Officer Bell (selective discretion). Small talk reveals more on later days; low trust closes conversations and shortens patience. Talking takes time from a queue. Tips depend on a seeded draw, remaining patience, and trust. Ivo, across the street, supports his brother and struggles with deliveries and permits. His relationship changes the street description and returns through callbacks.
 
-`assumed`: all numerical tuning, launch equation, sphere body, original castle/cyber course, action discretization and feedback are our adaptation, requested by Nicoh. Tests and search supply `code` evidence about this implementation; they do not promote design assumptions into observed human experience.
+Fatigue sometimes changes a recipe key after the second step; the displayed key is always the key accepted by the engine. Wrong keys consume time, without a failure overlay. Customer portraits and patience bars, short recipes, steam, tactile key caps, and an optional coin tone make work active. Keyboard and pointer use the same simulation operations. The world is grayscale with one warm accent, expressed in three qualitative bands of closeness. Laura’s portrait, line, and fridge paper also change. Pause, reduced-motion support, responsive layout and optional sound suit a classroom demo. Browser performance and visual layout still need human inspection.
 
-## Aiming and launch
+## Evidence labels
 
-Pointer-lock mouse look controls the actual eye ray. The crosshair stays central; the mint dot appears only on the nearest solid surface within 4.5m. The visible pole begins at the lower-right hand and points toward the crosshair. Holding left mouse attaches its tip to that fixed world point. Its quadratic curve bends down as charge grows, saturating after .8 seconds; pushing toward the point adds a small charging bonus. Looking remains free while attached. Releasing uses:
+- **code:** Melanie’s playable coffee role and Laura/custody pressure appear in Cart Life’s `cartlife/GlobalScript.asc`: lines 599–644 (Melanie/Laura setup), 1655 and 2552–2582 (barista grind/tamp actions), 2728–2737 (Laura at home/school/with Seth), 2945–2949 (school pickup plot checks). Source excerpts and a URL are retained in `SOURCE-EVIDENCE.txt`. This supports the adaptation’s premise, not our exact timing, recipes, dialogue, or rule effects.
+- **design:** every Small Change rule, all new dialogue and dilemmas, Ivo and the five regulars, endless days, hidden relationships, callbacks, no terminal custody loss, journaling, and the 2D interface follow Nicoh’s brief. None are labeled as Cart Life code or observed behavior.
+- **observed:** no human Cart Life session or Small Change peer playtest was conducted in this implementation session. The automated DOM trace is test evidence only, not human experience evidence.
 
-```
-away = normalize(eye - plantPoint)
-direction = normalize(away + .18 * normalize(lookDir) + (0, .22, 0))
-velocity = direction * (5 + 9 * clamp(bend, 0, 1))
-```
-
-The result replaces velocity, capped at 14m/s; momentum cannot accumulate without bound. Floor planting launches upward. Wall planting pushes away with a small up bias. Ceiling planting initially pushes downward: chain a replant to recover around undersides rather than expecting every surface to lift you. Holding is elastic visual charging, not a rigid rope constraint; the tip detaches if eye distance exceeds reach + .5m. Midair planting works, including automatic attachment when a held mouse finds a reachable surface.
-
-## Physics and course
-
-Pure TypeScript, no physics package, randomness or model. Fixed 1/120s steps; four position substeps and three contact passes per tick. Closest-point sphere/AABB depenetration removes inward normal velocity while preserving tangential velocity for sliding. An inside-box fallback chooses the nearest face. Upward contact normals above .65 ground the player. Radius .42m; the camera is the sphere center (a compact stylized body, not a standing-height capsule). Gravity 20m/s2. Ground friction is exponential, 8/s. WASD accelerates at 2m/s2 only below a 1.1m/s nudge cap or when opposing existing velocity. The strongest vault rises approximately 4.9m without intervening contact.
-
-The editable JSON is the collision source of truth: finite min/max boxes with IDs, material names and optional checkpoint/goal flags. The course is a rising series of broad gate ledges, offset pillars, shaft walls, underside/overhang targets and a narrower spire. Catch shelves reduce some falls. The sole mint checkpoint is at 15.4m of a 33m summit. Contact with its top saves once; contact with the gold summit top wins. R/void below -16m returns to checkpoint, retaining elapsed time and vault count; bottom restart resets the run. No fall damage.
-
-Rendering uses simple original materials plus retained Kenney decorative towers; scenery has no collision. A 2-pixel RenderPixelatedPass keeps aiming crisp. Launch adds a 7-degree FOV kick and small deterministic camera shake; landing produces dust. Synthesized filtered rush/thump audio needs no downloaded assets. HUD shows speedrun timer, stage, height, best records, vaults, reach and bend. Esc, focus loss and hidden tabs pause and cancel a held plant to avoid accidental launches.
-
-## Future player interface
-
-`src/player_interface.ts` owns authoritative state in a closure. Controllers get copied observations and proposals, never the course, renderer, files, credentials or model clients. The five operations are reset, observe, legal_actions, step, outcome. `simulateLaunch(state, plantPoint, bend, lookDir)` is a pure forward impulse model returning a new state; no trajectory appears in the player's HUD.
-
-Yaw buckets: angle = bucket * 2pi/16, starting along -Z; positive yaw aims +X. Pitch = -pi/2 + (bucket + .5) * pi/8, from down to up. Bend = (bucket + 1)/4. An action turns the eye, raycasts to the nearest surface, charges the selected amount and releases. `step` then runs at most 360 fixed ticks, stopping on landing/win. Standing or attached states permit actions; an unattached airborne state has none. The human controller can aim continuously and replant midair; the discrete baseline is intentionally narrower.
-
-Charge time is accounted as stationary setup time in this macro action; an already airborne attached macro does not simulate drift during that setup. Thus the discrete action is an abstraction of timed human inputs, not an exact mouse-input replay. The launch and flight integrator are shared. Refused/malformed/out-of-range actions return unchanged state and do not advance time.
-
-Observation contains position, velocity, ground/attachment/bend, time/height, checkpoint boolean, outcome and 128 local first-hit reach rays indexed by the same yaw/pitch buckets. This is an instantaneous turn-and-look scan in every candidate direction, including behind the initial heading; it reveals only the surface a player could see by looking there within pole reach. No full map, goal location, through-wall hits or box IDs are exposed. Legal actions are exactly the ray hits expanded over four bends.
-
-## Reachability evidence and remaining work
-
-`code`: tests and `docs/SEARCH-ROUTES.json`. Beam search starts at the actual spawn, selects only legal actions, quantizes landed positions to .5m for duplicate pruning, keeps 60 highest candidates per depth, and replays success through the exact sim. Search is development tooling, not a playing model, human playtest, evaluation or gate approval. Success proves a route exists for the discrete interface; failure would be inconclusive. Full course success is asserted as well as checkpoint success.
-
-TODO for Nicoh: verify pointer capture/Esc, aim at floor/wall/underside, release at low/full bend, recover from a fall and try midair chains. Record only actual play. Browser visual verification could not run because the connected tool inventory had no browser surfaces. Claude must independently review rules, boundary, evidence and implementation before any student merge decision.
+The source license is copied directly from the requested repository’s `LICENSE.md`. Original code, sprites, original music, and HOOGE are not shipped. See CREDITS and LICENSE-CARTLIFE. The rule map is in `rule-source-map.md` and the independent review handoff in `REVIEW-HANDOFF.md`.

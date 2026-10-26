@@ -1,7 +1,6 @@
-# Skill use for the first-person rebuild
+﻿# Skill use
 
-2026-10-25: Applied `.claude/skills/rule-change/SKILL.md`: wrote the scoped rule/source map and first-person tests before replacing the 2D sim. Initial execution: six first-person tests failed on absent 3D state/API; the old determinism check passed. Additional boundary/contact tests were added during implementation. No claim that every added test had a pre-implementation red run.
+Applied the repository rule-change workflow (`.claude/skills/rule-change/SKILL.md`): source map row before implementation, contract test first (module-absence failure), engine changes, verification, and written independent reviewer handoff. Claude review is pending. No agent was spawned and no model call was made. The optional Windows computer-use skill was read while investigating browser verification, but the available computer-use inventory contained no browser or app surfaces; no native UI automation was possible.
 
-Read the computer-use skill while exploring browser verification; no UI actions were performed because the CUA browser inventory was empty (in-app browser unavailable). Native Windows automation was not used. No human playtest, agent delegation or model call occurred. Claude review remains pending.
 
-The Get Out variation skill does not apply to this independent midterm rebuild.
+Second pass: followed `.claude/skills/rule-change/SKILL.md` (source-map assumed row, observed failing research tests, implementation, passing npm checks, independent Claude handoff). No review or approval performed by implementation agent.

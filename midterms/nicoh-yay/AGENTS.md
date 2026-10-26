@@ -1,6 +1,6 @@
-# Vaulting Ambition implementation
-Work only in this folder and the named midterm CI workflow. Nicoh is Creative Director and Executive Producer. No commits, pushes, merges, gate approvals, or model calls without explicit authorization. Claude reviews independently afterward.
+﻿# Small Change implementation
+Work only in this folder and the named midterm CI workflow. Nicoh is Creative Director and Executive Producer. No commits, pushes, merges, gate approvals, or model calls. Claude reviews independently afterward.
 
-Game code owns state. Keep the deterministic sim separate from rendering and development search. Player controllers receive copied observations and legal actions. Refused actions must leave state unchanged.
+Small Change replaces Vaulting Ambition (preserved on nicoh-yay/vaulting-ambition). This is a 2D DOM/CSS game: no Three.js, WebGL, external AI services, or runtime network dependency. Source evidence is in docs/SOURCE-EVIDENCE.txt; authored rules are design, not claims about Cart Life.
 
-Follow the repository rule-change workflow for further rule changes: map the design evidence, test first, implement, verify, hand off. The old Trial by Combat skills/matrix are superseded by Nicoh's replacement request; old work remains on nicoh-yay/trial-by-combat. For this prototype run npm test, npm run typecheck, npm run web:build. Reachability search is development evidence, not a human playtest or a model evaluation. Do not fabricate either.
+Game code owns state. Player controllers receive copied observations and legal option ids. Refused actions leave state unchanged. Add dilemmas as data in src/dilemmas.ts; follow docs/DILEMMAS.md. Follow the repository rule-change workflow for engine changes: evidence map, failing test first, implementation, verification, independent review. Run npm test, npm run typecheck, npm run web:build. Never claim automated traces are human playtest evidence.

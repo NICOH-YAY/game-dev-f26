@@ -1,227 +1,263 @@
-/// <reference types="vite/client" />
-import './style.css';
-import { reset, tick, plant, release, respawn, raycast, DT, C, course, type State, type Vec } from '../../src/sim/index.js';
-import { turnView } from './controls.js';
-import { TowerScene } from './scene.js';
-import { FpsWindow, MAX_FRAME_DT, qualityStep, simulationFrame, type Resolution } from './performance.js';
-const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const canvas = el<HTMLCanvasElement>('game'), overlay = el('overlay');
-const gpuMessage = 'Your browser is rendering 3D without the GPU. Enable hardware acceleration (Brave/Chrome: Settings > System > Use graphics acceleration when available, then relaunch) or try another browser.';
-function showGpuBanner() { el('gpu-banner').textContent = gpuMessage; el('gpu-banner').hidden = false; }
-let scene: TowerScene;
-try { scene = new TowerScene(canvas); }
-catch (error) { showGpuBanner(); el<HTMLButtonElement>('start').disabled = true; throw error; }
-canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); showGpuBanner(); menu(); });
-const fpsWindow = new FpsWindow();
-let qualityChecked = 0, lowFpsSince: number | null = null;
-const resolutionOption = el<HTMLSelectElement>('resolution');
-resolutionOption.onchange = () => {
-    scene.setResolution(resolutionOption.value as Resolution);
-    fpsWindow.reset(); lowFpsSince = null; qualityChecked = performance.now();
-};
-let state: State = reset(), started = false, paused = true, yaw = 0, pitch = -.9, sensitivity = 1, holding = false, acc = 0, last = performance.now(), bestHeight = 0, bestTime = 0, toastUntil = 0;
-let manualSteps = false;
-let hadPointerLock = false, rightDragging = false, dragX = 0, dragY = 0;
-const keys = new Set<string>();
-try {
-    const value = JSON.parse(localStorage.getItem('vaulting-ambition-3d') ?? '{}');
-    bestHeight = Number.isFinite(value.height) ? Math.max(0, value.height) : 0;
-    bestTime = Number.isFinite(value.time) ? Math.max(0, value.time) : 0;
-}
-catch { }
-const save = () => { try {
-    localStorage.setItem('vaulting-ambition-3d', JSON.stringify({ height: bestHeight, time: bestTime }));
-}
-catch { } };
-const look = (): Vec => ({ x: -Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) });
-const toast = (s: string) => { el('toast').textContent = s; toastUntil = performance.now() + 3000; };
+import "./style.css";
+import {
+  reset,
+  observe,
+  step,
+  restore,
+  legal_actions,
+  type State,
+} from "../../src/sim.js";
+import { press, tick, talk, regulars } from "../../src/coffee.js";
+const root = document.querySelector<HTMLDivElement>("#app")!;
+const SAVE = "small-change-v1";
+let state: State = reset();
+let started = false,
+  paused = false,
+  muted = true,
+  resetting = false,
+  saveNotice = "";
+let last = performance.now(),
+  paint = 0;
 let audio: AudioContext | undefined;
-function sound(launch: boolean) {
-    try {
-        audio ??= new AudioContext();
-        void audio.resume();
-        const gain = audio.createGain(), filter = audio.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(launch ? 1800 : 300, audio.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(80, audio.currentTime + .3);
-        const buffer = audio.createBuffer(1, Math.floor(audio.sampleRate * .35), audio.sampleRate), samples = buffer.getChannelData(0);
-        // Deterministic synthesized rush: no downloaded sounds or random sim state.
-        for (let i = 0; i < samples.length; i++)
-            samples[i] = Math.sin(i * 1.73) * Math.sin(i * .137) * Math.cos(i * .931);
-        const source = audio.createBufferSource();
-        source.buffer = buffer;
-        gain.gain.setValueAtTime(launch ? .18 : .12, audio.currentTime);
-        gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .32);
-        source.connect(filter).connect(gain).connect(audio.destination);
-        source.start();
-    }
-    catch { }
+try {
+  const raw = localStorage.getItem(SAVE);
+  if (raw) {
+    const loaded = restore(JSON.parse(raw));
+    if (loaded) state = loaded;
+    else
+      saveNotice = "The saved life could not be read. A new morning is ready.";
+  }
+} catch {
+  saveNotice = "Saving is unavailable. You can still play this session.";
 }
-function cancel() { rightDragging = false; holding = false; state = { ...state, plant: null, bend: 0 }; keys.clear(); acc = 0; }
-function menu() { paused = true; save(); cancel(); overlay.hidden = false; el('heading').textContent = state.won ? 'CROWN CLAIMED' : 'PAUSED'; el('start').textContent = state.won ? 'CLIMB AGAIN' : 'CLICK TO RESUME'; el('title').hidden = true; }
-function resume() {
-    started = true;
-    paused = false;
-    overlay.hidden = true;
-    el('title').hidden = true;
-    last = performance.now();
-    acc = 0;
-    void lock();
+function save() {
+  try {
+    localStorage.setItem(SAVE, JSON.stringify(state));
+  } catch {
+    saveNotice =
+      "Progress is kept for this session; browser storage is unavailable.";
+  }
 }
-async function lock() {
-    try { await canvas.requestPointerLock?.(); }
-    catch { /* The game remains playable using fallback look. */ }
+function esc(s: string) {
+  return s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ]!,
+  );
 }
-el('start').onclick = () => {
-    if (!started || state.won) { state = reset(); yaw = 0; pitch = -.9; }
-    resume();
-};
-document.addEventListener('pointerlockchange', () => {
-    rightDragging = false;
-    const locked = document.pointerLockElement === canvas;
-    if (!locked && hadPointerLock && started && !paused) menu();
-    else if (locked && paused) document.exitPointerLock?.();
-    hadPointerLock = locked;
-});
-document.addEventListener('pointerlockerror', () => {
-    rightDragging = false;
-    if (!paused) toast('Mouse lock unavailable / Hold right mouse and drag to look');
-});
-document.addEventListener('mousemove', e => {
-    if (paused) return;
-    const locked = document.pointerLockElement === canvas;
-    if (!locked && !rightDragging) return;
-    const dx = locked ? e.movementX : e.clientX - dragX;
-    const dy = locked ? e.movementY : e.clientY - dragY;
-    dragX = e.clientX; dragY = e.clientY;
-    yaw -= dx * .002 * sensitivity;
-    pitch = Math.max(-1.52, Math.min(1.52, pitch - dy * .002 * sensitivity));
-});
-canvas.addEventListener('mousedown', e => {
-    if (e.button === 2 && !paused) {
-        e.preventDefault(); rightDragging = true; dragX = e.clientX; dragY = e.clientY;
-    }
-});
-document.addEventListener('mouseup', e => { if (e.button === 2) rightDragging = false; });
-canvas.addEventListener('mousedown', e => { if (e.button === 0 && !paused) {
-    holding = true;
-    state = plant(state, look());
-} });
-document.addEventListener('mouseup', e => { if (e.button !== 0)
-    return; holding = false; if (paused || !state.plant)
-    return; state = release(state, look()); scene.launch(); sound(true); });
-window.addEventListener('keydown', e => {
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyR', 'KeyF', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Escape'].includes(e.code)) e.preventDefault();
-    if (e.code === 'F3') { e.preventDefault(); if (!e.repeat) el('fps').hidden = !el('fps').hidden; return; }
-    if (e.code === 'Escape') {
-        if (started && !paused) { menu(); document.exitPointerLock?.(); }
-        return;
-    }
-    if (!paused) keys.add(e.code);
-});
-window.addEventListener('keyup', e => keys.delete(e.code));
-document.addEventListener('visibilitychange', () => { fpsWindow.reset(); lowFpsSince = null; if (document.hidden && started) {
-    document.exitPointerLock?.();
-    menu();
-} });
-window.addEventListener('blur', () => { if (started) {
-    document.exitPointerLock?.();
-    menu();
-} });
-el<HTMLInputElement>('sensitivity').oninput = e => { sensitivity = Number((e.target as HTMLInputElement).value); el('sensvalue').textContent = sensitivity.toFixed(1); };
-el('checkpoint').onclick = () => { started = true; state = respawn(state); cancel(); toast('Returned to checkpoint'); resume(); };
-el('bottom').onclick = () => { state = reset(); yaw = 0; pitch = -.9; cancel(); resume(); };
-canvas.addEventListener('contextmenu', e => e.preventDefault());
-const format = (t: number) => `${Math.floor(t / 60).toString().padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
-function advance(dt: number) {
-    if (!paused) {
-        const timing = simulationFrame(acc, dt);
-        acc = timing.remainder;
-        for (let step = 0; step < timing.steps; step++) {
-            ({ yaw, pitch } = turnView(yaw, pitch, keys, DT));
-            const prev = state;
-            const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS')), side = Number(keys.has('KeyD')) - Number(keys.has('KeyA'));
-            let nudge = { x: -Math.sin(yaw) * forward + Math.cos(yaw) * side, y: 0, z: -Math.cos(yaw) * forward - Math.sin(yaw) * side };
-            const n = Math.hypot(nudge.x, nudge.z);
-            if (n > 1)
-                nudge = { x: nudge.x / n, y: 0, z: nudge.z / n };
-            if (holding && !state.plant)
-                state = plant(state, look());
-            state = tick(state, nudge);
-            if (state.landings > prev.landings) {
-                scene.land(state.p);
-                sound(false);
-            }
-            if (state.saved && !prev.saved)
-                toast('CHECKPOINT SAVED / Pause to return here');
-            if (state.won) {
-                if (!bestTime || state.time < bestTime)
-                    bestTime = state.time;
-                save();
-                document.exitPointerLock?.();
-                menu();
-                el('message').textContent = `Summit in ${format(state.time)} / ${state.vaults} vaults`;
-                break;
-            }
-        }
-        if (state.bestHeight > bestHeight) {
-            bestHeight = state.bestHeight;
-        }
-    }
+const suppliedArt = new Set(["title","melanie","laura","laura_distant","cart_street","rival","regular_nurse","regular_businessman","regular_student","regular_oldman","regular_cop","apartment"]);
+const assetStatus = new Map<string, boolean>();
+function art(name: string, label: string, cls = "") {
+  return `<div class="art ${cls}" role="img" aria-label="${esc(label)}"><div class="silhouette"><i></i><b></b><span>${esc(label)}</span></div>${!suppliedArt.has(name) || assetStatus.get(name) === false ? "" : `<img src="./art/${name}.png" alt="" data-art="${name}">`}</div>`;
 }
-function frame(now: number) {
-    const elapsed = Math.max(0, (now - last) / 1000);
-    const dt = Math.min(elapsed, MAX_FRAME_DT);
-    last = now;
-    if (!manualSteps) advance(elapsed);
-    if (!document.hidden) {
-        const fps = fpsWindow.sample(now);
-        if (fps !== null) {
-            el('fps').textContent = `${fps.toFixed(0)} FPS / ${scene.resolution} / F3`;
-            if (now - qualityChecked >= 1000) {
-                qualityChecked = now;
-                const next = qualityStep(scene.resolution, fps);
-                if (next !== scene.resolution) {
-                    scene.setResolution(next); resolutionOption.value = next;
-                    toast(`Resolution lowered to ${next} for performance`);
-                    fpsWindow.reset(); lowFpsSince = null;
-                } else if (scene.resolution === '320x180' && fps < 15) {
-                    lowFpsSince ??= now;
-                    if (now - lowFpsSince >= 3000) showGpuBanner();
-                } else lowFpsSince = null;
-            }
-        }
-    } else { fpsWindow.reset(); lowFpsSince = null; }
-    const hit = raycast(state.p, look());
-    el('lookmode').textContent = document.pointerLockElement === canvas ? 'LOOK: Mouse / Esc: pause' : 'LOOK: Hold right mouse + drag / Q E or left/right arrows: turn / R F or up/down arrows: pitch / Esc: pause';
-    el('crosshair').classList.toggle('reach', !!hit);
-    el('bend').style.width = `${state.bend * 100}%`;
-    el('timer').textContent = format(state.time);
-    el('stage').textContent = [...course.stages].reverse().find(s => state.p.y >= s.y)?.name.toUpperCase() ?? 'GATE';
-    el('stats').textContent = `HEIGHT ${Math.max(0, state.p.y - C.radius).toFixed(1)}m / 33m\nBEST ${bestHeight.toFixed(1)}m / TIME ${bestTime ? format(bestTime) : '--'}\nVAULTS ${state.vaults} / CHECKPOINT ${state.saved ? 'SAVED' : '--'}`;
-    el('hint').textContent = state.plant ? 'PLANTED / Hold to bend / Look to steer / Release to launch' : hit ? 'IN REACH / Hold left mouse to plant' : 'Aim at a nearby surface / Look down to vault';
-    if (now > toastUntil)
-        el('toast').textContent = '';
-    scene.render(state, yaw, pitch, hit?.point ?? null, dt);
-    requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-
-if (import.meta.env.DEV) {
-    const debug = {
-        getState: () => structuredClone({ ...state, yaw, pitch, paused }),
-        setView: (newYaw: number, newPitch: number) => {
-            if (!Number.isFinite(newYaw) || !Number.isFinite(newPitch)) return;
-            yaw = newYaw; pitch = Math.max(-1.52, Math.min(1.52, newPitch));
-        },
-        plant: () => { if (!paused) { holding = true; state = plant(state, look()); } },
-        release: () => { holding = false; if (!paused && state.plant) state = release(state, look()); },
-        // First step takes over the clock from RAF; step(0) enables manual QA timing.
-        step: (ms: number) => {
-            if (!Number.isFinite(ms) || ms < 0) return;
-            if (!manualSteps) { manualSteps = true; acc = 0; }
-            advance(ms / 1000);
-        },
+function wireArt() {
+  root.querySelectorAll<HTMLImageElement>("[data-art]").forEach((img) => {
+    img.onload = () => {
+      assetStatus.set(img.dataset.art!, true);
+      img.parentElement?.classList.add("loaded");
     };
-    (window as Window & { __va?: typeof debug }).__va = debug;
+    img.onerror = () => {
+      assetStatus.set(img.dataset.art!, false);
+      img.hidden = true;
+      img.parentElement?.classList.remove("loaded");
+    };
+    if (img.complete && img.naturalWidth)
+      img.parentElement?.classList.add("loaded");
+  });
 }
+function sound() {
+  if (muted) return;
+  try {
+    audio ??= new AudioContext();
+    void audio.resume();
+    const o = audio.createOscillator(),
+      g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(900, audio.currentTime);
+    o.frequency.exponentialRampToValueAtTime(300, audio.currentTime + 0.08);
+    g.gain.setValueAtTime(0.04, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.12);
+    o.connect(g);
+    g.connect(audio.destination);
+    o.start();
+    o.stop(audio.currentTime + 0.13);
+  } catch {
+    muted = true;
+  }
+}
+function act(id: string) {
+  state = step(state, id);
+  save();
+  render();
+  root.querySelector<HTMLElement>("#scene-title")?.focus();
+}
+function key(k: string) {
+  if (!started || paused || state.phase !== "coffee" || resetting) return;
+  const before = state.coffee.served;
+  state = { ...state, coffee: press(state.coffee, k) };
+  if (state.coffee.served > before) sound();
+  render();
+  const el = root.querySelector(`[data-key="${k.toUpperCase()}"]`);
+  el?.classList.add("pressed");
+  setTimeout(() => el?.classList.remove("pressed"), 120);
+  save();
+}
+const keyNames: Record<string, string> = {
+  G: "grind",
+  T: "tamp",
+  P: "pull",
+  S: "steam",
+  W: "water",
+  L: "lid",
+};
+function coffeeView() {
+  const c = state.coffee,
+    q = c.queue[0];
+  return `<div class="shift-heading"><span>THE LUNCH CROWD</span><span>${c.elapsed < 35000 ? "Opening cups" : c.elapsed < 70000 ? "Between buses" : "The last stretch"}</span></div><div class="queue">${c.queue.map((q, i) => `<div class="customer ${i === 0 ? "current" : ""}">${art("regular_" + q.id, q.name)}<span>${q.name}</span><div class="patience" role="meter" aria-label="${q.name} patience" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.max(0, Math.min(100, Math.round(q.patience / 240)))}"><i style="width:${Math.max(0, Math.min(100, q.patience / 240))}%"></i></div></div>`).join("")}</div><div class="recipe"><div class="cup ${c.steam ? "steaming" : ""}"><i>≋</i>▰</div><div><p class="eyebrow">${q ? esc(q.name) + " · " + esc(q.drink) : "A moment to wipe the counter"}</p><div class="keys">${q ? q.keys.map((k, i) => `<button data-key="${k}" class="key ${i < c.index ? "done" : ""} ${i === c.index ? "next" : ""}" ${i !== c.index ? 'tabindex="-1"' : ""} aria-label="${keyNames[k]}">${k}<small>${keyNames[k]}</small></button>`).join("") : ""}</div><p class="hint">Type the sequence, or tap the lit key. A slipped key takes a moment to recover.</p>${c.shaky ? '<p class="warm">Your hand shook. Read the changed recipe.</p>' : ""}</div></div><p class="reaction" role="status">${esc(c.reaction || "The machine hums. Shoes scrape the pavement.")}</p>${q && !q.talked ? `<div class="smalltalk"><span>${esc(regulars.find((r) => r.id === q.id)!.role)}</span><button data-talk="listen">“How has your morning been?”</button><button data-talk="kind">“No hurry. Take a breath.”</button><small>Talking takes a little time.</small></div>` : q?.line ? `<blockquote>${esc(q.line)}</blockquote>` : ""}`;
+}
+function render() {
+  const o = observe(state);
+  document.documentElement.style.setProperty(
+    "--warm",
+    `${{ warm: 80, fading: 35, faint: 5 }[o.palette]}%`,
+  );
+  if (!started) {
+    root.innerHTML = `<main class="title-screen"><div class="title-art">${art("title", "A cart beneath an apartment window")}</div><div class="title-copy"><p class="eyebrow">A LIFE IN THE SPACES BETWEEN</p><h1>Small<br><em>Change</em></h1><p>Since the separation, Melanie has a coffee cart,<br>a daughter named Laura, and another morning to get through.</p><button class="primary" id="start">${state.day > 1 || state.history.length ? "Return to your life" : "Open the curtains"} <span>↗</span></button><p class="intro-note">Serve coffee. Make room. Live with the little things.<br>There is no final day, score, or perfect way through.</p><p class="credit">An adaptation of <a href="https://github.com/historicalsource/cartlife_src">Cart Life</a> (2011)<br>by <strong>Richard Hofmeier</strong> · Creative Director: Nicoh</p>${saveNotice ? `<p role="status">${esc(saveNotice)}</p>` : ""}</div></main>`;
+    root.querySelector("#start")!.addEventListener("click", () => {
+      started = true;
+      last = performance.now();
+      render();
+    });
+    wireArt();
+    return;
+  }
+  const home = ["morning", "evening", "chapter", "journal"].includes(
+    state.phase,
+  );
+  root.innerHTML = `<div class="shell"><header><a class="wordmark" href="#" id="home">Small Change<span>A CART LIFE ADAPTATION</span></a><div class="header-right"><span>DAY ${state.day} / ${state.phase === "coffee" || state.phase === "shift" ? "CART SHIFT" : state.phase.toUpperCase()}</span><button id="pause">${paused ? "Resume" : "Pause"}</button><button id="sound" aria-pressed="${!muted}">Sound ${muted ? "off" : "on"}</button><button id="new">New life</button></div></header><main class="game"><section class="world ${home ? "home" : "street"}" aria-label="${home ? "The apartment" : "The cart street"}">${art(home ? "apartment" : "cart_street", home ? "Home, before and after work" : "Two carts, one street", "background")}<div class="skyline"><i></i><i></i><i></i><i></i></div><div class="window"><div></div><div></div></div>${home ? `<div class="fridge"><span>${o.palette === "warm" ? "♡" : "▤"}</span></div><div class="table"></div>${art(o.palette !== "warm" ? "laura_distant" : "laura", "Laura", "laura")}<div class="ambient"><span>ON THE FRIDGE</span><p>${esc(o.drawing)}</p></div>` : `<div class="awning">COFFEE · HOT & FRESH</div><div class="cart"><span>SMALL CHANGE</span><i>◉</i><i>◉</i></div>${art("rival", "Ivo", "rival")}<div class="rival-cart">IVO’S</div><div class="ambient"><span>ACROSS THE STREET</span><p>${esc(o.rival)}</p></div>`}${art("melanie", "Melanie", "melanie")}<div class="world-caption">${home ? art(o.palette === "warm" ? "laura" : "laura_distant", "Laura", "portrait") : ""}<span>${home ? esc(o.laura) : esc(o.fatigue)}</span></div><div class="grain"></div></section><section class="panel" aria-label="Current scene"><p class="eyebrow">${home ? "THE APARTMENT" : "AT THE CORNER"} · DAY ${state.day}</p><h2 id="scene-title" tabindex="-1">${esc(o.title)}</h2>${paused ? '<div class="pause-note"><p>The street can wait.</p><button id="resume">Resume your day</button></div>' : state.phase === "coffee" ? coffeeView() : state.phase === "journal" ? `<div class="journal">${o.journal.map((l) => `<p>${esc(l)}</p>`).join("")}<p class="signature">— Melanie</p></div><button data-action="continue" class="primary">Put the kettle away →</button>` : `${o.echoes.length ? `<aside class="echoes">${o.echoes.map((l) => `<p>${esc(l)}</p>`).join("")}</aside>` : ""}<div class="dialogue"><div class="dialogue-portraits">${art("melanie", "Melanie", "portrait")}${o.companion ? art(o.companion.art, o.companion.name, "portrait") : ""}</div><div><p class="speaker">Melanie${o.companion ? " / " + esc(o.companion.name) : ""}</p><p class="situation">${esc(o.situation)}</p></div></div><div class="choices">${o.options.map((a, i) => `<button data-action="${a.id}"><span class="option-num">0${i + 1}</span><span>${esc(a.text)}</span><span>↗</span></button>`).join("")}</div>`}<footer class="register"><span>IN THE REGISTER</span><p>${esc(o.cash)}</p></footer></section></main><div class="bottom"><span>Melanie’s journal is saved after each choice.</span><span>Adapted from Richard Hofmeier’s Cart Life · <a href="./LICENSE-CARTLIFE.md">License & notice</a></span></div>${saveNotice ? `<p role="status">${esc(saveNotice)}</p>` : ""}${resetting ? '<div class="modal"><div role="dialog" aria-modal="true" aria-labelledby="reset-title"><h2 id="reset-title">A different morning?</h2><p>This replaces the saved life on this browser.</p><button id="cancel-reset">Keep this life</button><button id="confirm-reset">Begin a new life</button></div></div>' : ""}</div>`;
+  root
+    .querySelectorAll<HTMLButtonElement>("[data-action]")
+    .forEach((b) => (b.onclick = () => act(b.dataset.action!)));
+  root
+    .querySelectorAll<HTMLButtonElement>("[data-key]")
+    .forEach((b) => (b.onclick = () => key(b.dataset.key!)));
+  root.querySelectorAll<HTMLButtonElement>("[data-talk]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        state = {
+          ...state,
+          coffee: talk(
+            state.coffee,
+            b.dataset.talk as "listen" | "kind",
+            state.day,
+          ),
+        };
+        save();
+        render();
+      }),
+  );
+  root.querySelector("#pause")!.addEventListener("click", () => {
+    paused = !paused;
+    last = performance.now();
+    render();
+  });
+  root.querySelector("#resume")?.addEventListener("click", () => {
+    paused = false;
+    last = performance.now();
+    render();
+  });
+  root.querySelector("#sound")!.addEventListener("click", () => {
+    muted = !muted;
+    if (!muted) sound();
+    render();
+  });
+  root.querySelector("#new")!.addEventListener("click", () => {
+    resetting = true;
+    render();
+    root.querySelector<HTMLElement>("#cancel-reset")?.focus();
+  });
+  root.querySelector("#cancel-reset")?.addEventListener("click", () => {
+    resetting = false;
+    render();
+  });
+  root.querySelector("#confirm-reset")?.addEventListener("click", () => {
+    state = reset();
+    resetting = false;
+    paused = false;
+    save();
+    render();
+  });
+  root.querySelector("#home")!.addEventListener("click", (e) => {
+    e.preventDefault();
+    started = false;
+    render();
+  });
+  wireArt();
+}
+// Preserve focus and animations between customer arrivals.
+let queueStamp = "";
+function refreshCoffee() {
+  const c = state.coffee,
+    stamp =
+      c.rng +
+      ":" +
+      c.queue.map((q) => q.id + q.talked).join(",") +
+      ":" +
+      c.index;
+  if (stamp !== queueStamp) {
+    queueStamp = stamp;
+    render();
+    return;
+  }
+  root.querySelectorAll<HTMLElement>(".patience").forEach((meter, i) => {
+    const value = Math.max(0, Math.min(100, (c.queue[i]?.patience ?? 0) / 240));
+    meter.setAttribute("aria-valuenow", String(Math.round(value)));
+    const bar = meter.firstElementChild as HTMLElement | null;
+    if (bar) bar.style.width = value + "%";
+  });
+  root.querySelector(".cup")?.classList.toggle("steaming", c.steam > 0);
+  const reaction = root.querySelector(".reaction");
+  if (reaction)
+    reaction.textContent =
+      c.reaction || "The machine hums. Shoes scrape the pavement.";
+}
+window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (e.key === "Escape") {
+    paused = !paused;
+    last = performance.now();
+    render();
+    return;
+  }
+  if (state.phase === "coffee" && /^[gtpswl]$/i.test(e.key)) {
+    e.preventDefault();
+    key(e.key);
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && started) {
+    paused = true;
+    render();
+  }
+  last = performance.now();
+});
+setInterval(() => {
+  const now = performance.now(),
+    dt = Math.min(250, now - last);
+  last = now;
+  if (!started || paused || resetting || state.phase !== "coffee") return;
+  state = { ...state, coffee: tick(state.coffee, dt) };
+  if (legal_actions(state).includes("close")) {
+    act("close");
+    return;
+  }
+  paint += dt;
+  if (paint > 200) {
+    paint = 0;
+    refreshCoffee();
+  }
+}, 100);
+window.addEventListener("pagehide", save);
+render();

@@ -1,5 +1,5 @@
 {
-  "name": "vaulting-ambition",
+  "name": "small-change",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,12 +12,9 @@
     "web": "vite web --host 127.0.0.1",
     "web:build": "vite build web --base=./"
   },
-  "dependencies": {
-    "three": "0.180.0"
-  },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "@types/three": "0.180.0",
+    "happy-dom": "^21.0.4",
     "typescript": "5.9.3",
     "vite": "7.3.7",
     "vitest": "^5.0.5"

@@ -1,39 +1,36 @@
-# Vaulting Ambition
+﻿# Small Change
+A playable 2D adaptation of **Cart Life (Richard Hofmeier, 2011)**, directed by Nicoh. Melanie is separated and raising Laura while running a coffee cart. The days keep coming. There is no score, terminal failure, morality meter, or ending to optimize.
 
-First-person 3D pole climbing for Nicoh, Creative Director and Executive Producer. Five authored stages rise 33 metres: Gate, Pillars, Wall run, Overhangs, Spire. One checkpoint at 15.4m. Falls cost progress; catch platforms offer recovery.
-
-## Run
-
-Node 24 and npm, from `midterms/nicoh-yay/`:
+## Play locally
+Requires Node 24 and npm. From `midterms/nicoh-yay/`:
 
 ```sh
 npm ci
 npm run web
+```
+Open http://127.0.0.1:5173. Choose **Open the curtains**. Read and select a morning choice, then the first cart dilemma. Serve coffee by typing the displayed recipe letters **G / T / P / S / W / L**, or tapping each highlighted key. Orders differ; read the recipe when Melanie’s hands shake. Conversations take time. Patience bars belong to customers, not to a morality system.
+
+A shift contains 105 seconds of simulation time with three dilemma interruptions; decisions pause service. Mistakes and conversation consume some of that time. Then an evening choice and Melanie’s journal lead into another day. Every fifth day brings a Laura vignette. **Pause** or Escape pauses; switching tabs pauses automatically. Optional sound begins muted. **New life** offers a local reset confirmation. Browser storage saves decisions and coffee actions; no account, API, or model is used. A blocked or malformed save falls back safely. Paused progress resumes from the title screen.
+
+## Test and publish
+
+```sh
 npm test
 npm run typecheck
 npm run web:build
 ```
+The static output is `web/dist/`, with relative asset URLs (`base './'`). Upload that folder to Cloudflare Pages (build command `npm run web:build`, project root `midterms/nicoh-yay`, output `web/dist`) under the course publishing workflow. No deployment, commit, or push was performed. CI remains `.github/workflows/midterm-nicoh-yay.yml`, running npm ci/test/typecheck in this folder.
 
-Open http://127.0.0.1:5173 (or the URL Vite prints). Build output: `web/dist/`. Use `npm.cmd` in PowerShell if scripts are blocked. Desktop mouse/keyboard and WebGL are required.
+## Structure
+- `src/sim.ts`: deterministic day simulation, state ownership, saves, five operations.
+- `src/player_interface.ts`: reset / observe / legal_actions / step / outcome exports. Controllers should receive observations and legal ids; keep State in the host, not in the player.
+- `src/dilemmas.ts`: 24 dilemmas, callback text, declarative conditions and hidden effects, validator.
+- `src/coffee.ts`: seeded orders, patience, recipes, fatigue, tips and conversation.
+- `src/scripted_controller.ts`: deterministic development coffee controller, no model.
+- `web/src/`: responsive DOM/CSS view, input, optional WebAudio, local save.
+- `tests/`: contracts, integration, full-day automated DOM flow.
 
-## Controls
+## Pending art
+All new PNGs are currently placeholders. Drop Claude’s Higgsfield images into `web/public/art/` with these filenames: `title.png`, `melanie.png`, `laura.png`, `laura_distant.png`, `cart_street.png`, `rival.png`, `regular_businessman.png`, `regular_student.png`, `regular_nurse.png`, `regular_oldman.png`, `regular_cop.png`, `apartment.png`. Missing files use CSS scenes/silhouettes; no art generation was requested from a model. Backgrounds replace the CSS scenery automatically; portraits retain transparent backgrounds. The original game’s assets, music, and HOOGE font are not bundled.
 
-- Click Start to capture the mouse. Mouse looks; Esc releases and pauses.
-- Aim at the mint reach dot. Hold left mouse to stick the pole tip there and bend it; release to launch away from that point. Look down at the floor for the first vault. Looking around while planted adjusts the small directional bias.
-- Replant in midair to chain vaults. Holding with no target will plant when a surface enters reach.
-- WASD gives a tiny nudge, not walking speed. The pole provides real movement.
-- R returns to the saved checkpoint (or bottom before reaching it), retaining the timer. Pause menu: sensitivity, checkpoint restart, bottom restart. Bottom restart clears the current timer and vault count.
-- Height, best height, best completed time and vault count are on the HUD. Records use localStorage with a safe fallback when storage is blocked.
-
-## Where to change things
-
-- `src/sim/index.ts`: pure deterministic 120 Hz integrator, launch model and game rules. `C` holds reach 4.5m, radius .42m, gravity 20m/s2, launch speed 5-14m/s, .8-second bend, .18 look bias, .22 upward bias, nudge cap 1.1m/s, friction 8/s, void -16m.
-- `src/sim/tower.json`: explicit boxes in metres, min/max corners, material, optional checkpoint/goal. Exactly one of each. No visual mesh controls collision.
-- `web/src/main.ts`: mouse sensitivity .002 radians/pixel times slider, input and HUD.
-- `web/src/scene.ts`: 78-degree FOV, +7 launch kick, 2-pixel post effect, procedural pole/dust, Kenney scenery. Retained KayKit assets remain available.
-- `src/player_interface.ts`: state-owning reset / observe / legal_actions / step / outcome. Actions use yawBucket 0-15, pitchBucket 0-7, bendBucket 0-3. See DESIGN for exact semantics.
-- `src/sim/search.ts`: development beam search, isolated from web/player interface. `docs/SEARCH-ROUTES.json` stores replayed deterministic routes for the future baseline.
-
-## Evidence and limits
-
-Tests cover deterministic hash, launch, contacts, midair planting, checkpoint/void/goal, action refusal and course validation. Beam search plus exact replay reaches the checkpoint and summit. This proves discrete reachability, not aiming comfort or enjoyment. Nicoh rejected the previous 2D prototype; this replacement has not yet had a human playtest. Browser tooling was unavailable, so pointer lock, visual polish and feel still need desktop verification. Claude review is pending in `docs/REVIEW-HANDOFF.md`. No commits, pushes or model calls were made.
+See [credits](CREDITS.md), [license](LICENSE-CARTLIFE.md), [design](docs/DESIGN.md), [data authoring](docs/DILEMMAS.md), and [Claude handoff](docs/REVIEW-HANDOFF.md). Human playtesting and Claude review remain pending.

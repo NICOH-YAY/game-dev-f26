@@ -1,0 +1,13 @@
+# Adding dilemmas as data
+
+Edit `src/dilemmas.ts`: add a literal `Dilemma` object to `dilemmas` and a source entry in `docs/DILEMMA-SOURCES.md`. Every card needs a unique id, title, moment (morning/shift/evening), situation, conditions array, two or three options, one or two foundations, and `evidence: "design"`. Foundations are care, fairness, loyalty, authority, sanctity, liberty; authoring metadata never appears as a player grade.
+
+Each option needs a local id, text, effects using exported stateKeys, unique ledger entry, and first-person journal. Callbacks reference an id/text pair in `callbacks` with a positive day delay. At least one option on every card must schedule its quiet echo; use branch-specific echoes when outcomes differ. The engine delivers due callbacks on later mornings, including chapter mornings.
+
+Conditions are ANDed: `{key, min?, max?}` or `{prior: "accepted-ledger-entry", absent?: true}`. Keep unconditional cards for all three moments. A chain uses `chain`, zero-based `chainStep`, `drift` narration, `compromise` on accepted options and `euphemism` wording. The next step requires the preceding accepted ledger entry. Refusal never advances it. Accepted-step counts derive from distinct cards with accepted entries, so repeating a step does not inflate the counter. After any acceptance in that chain, compromise options come first and honest options last. Plain text remains for a player who refused. The till?s exact-change stage is a neutral routine, not a moral penalty; accepting that routine introduces the first small miscount temptation. No chain repeats within a day.
+
+`minutes` on helping options visibly costs pickup time when hidden `pickupLate` is positive. Everyone Saw is restricted to that state. Tired mornings can begin a late shift; the choice label states the additional minutes, and the journal records arrival time. No evaluative message accompanies it. Medicine requires both short cash and Laura being sick; the day cycle supplies illness periodically as an authored scheduling assumption.
+
+Morning and evening delivery cards offer identical options with different situational pressure. Fatigue research is flavor only, with shaky replication; no causal claim is made. Laura chapters cycle through warm or distant authored moments selected by closeness, trust, and self-reliance.
+
+Run npm test, npm run typecheck, npm run web:build. Tests cover selector reachability, acceptance gates, drift, callbacks, fatigue framing, pickup time, illness, and Laura variants. Add a failing test and source-map row before changing a rule. Claude reviews independently. Do not claim automated traces are human playtest evidence or recalled citations are verified.

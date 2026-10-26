@@ -1,0 +1,101 @@
+Source: https://github.com/historicalsource/cartlife_src/blob/master/cartlife/GlobalScript.asc
+33: bool cellalarmed_custody;
+113: //NewScores(1, 0);//Melanie
+390: //cMelanie.AddInventory(CoffeeA);
+555: npcAndrus_location=0; npcLogan_location=13; npcMelanie_location=17; npcVinny_location=22;
+566: cLogan.ChangeRoom(24, 80, 82); cMelanie.ChangeRoom(24, 136, 82); cEgo.ChangeRoom(24, 190, 82); bmood.Visible=false;
+595: if (superd==2){////////////////////////MELANIE DIRECT FLIGHT
+598: npcAndrus_location=5; npcLogan_location=13; npcMelanie_location=0; npcVinny_location=22;
+599: Melanie.ChangeRoom(4, 10, 10); small_laura=1; small_rebecca=1;
+600: SetGlobalInt(1,2); FadeOut(1); cMelanie.SetAsPlayer(); gGui1.BackgroundGraphic=6;
+621: //cMelanie.ChangeRoom(2, 275,  58);
+629: //Laura.ChangeRoom(4, 370, 192);//Setting up laura in Limbo
+630: //player.ChangeRoom(26, 300, 140);//Starting Melanie in Collins
+643: Laura.ChangeRoom(2, 370, 192);//Setting up laura at the door
+644: player.ChangeRoom(2, 275, 80);//Melanie! = 2 (Coffee Color)
+650: npcAndrus_location=5; npcLogan_location=13; npcMelanie_location=17; npcVinny_location=0;
+656: cLogan.ChangeRoom(24, 80, 82); cMelanie.ChangeRoom(24, 136, 82); cAndrus.ChangeRoom(24, 25, 82);
+689: npcAndrus_location=0; npcLogan_location=13; npcMelanie_location=17; npcVinny_location=22;
+700: cLogan.ChangeRoom(24, 80, 82); cMelanie.ChangeRoom(24, 136, 82); cEgo.ChangeRoom(24, 190, 82); bmood.Visible=false;
+1199: String incomestamp;
+1200: if (small_customer>0){incomestamp=String.Format("%.2f - Sold %s to %s",saleprice, saleitem, salebuyer);}
+1201: if (small_customer<=0){incomestamp=String.Format("%.2f - Sold %s",saleprice, saleitem);}
+1202: incomelist.AddItem(String.Format("%s",incomestamp));
+1655: baristarrow.Animate(264,2, 1, eRepeat);//Downarrow Anim for GRIND
+2119: if (salebuyer==("Melanie")){customertalk(); dText.Text=("Hi!");blab1();}
+2537: if ((GetGlobalInt(1)==2)&&(toothbg.NormalGraphic<9351)&&(IsKeyPressed(eKeyDownArrow)==1)){//Melanie
+2541: if ((GetGlobalInt(1)==2)&&(brushesleft>50)&&(toothbg.Graphic>=9351)){//Melanie Spit: Good!
+2552: if ((baraction.Graphic>=7855)&&(baraction.Graphic<=7874)){//Grind!
+2559: aSound58.Play(); baraction.NormalGraphic=7876; barint=0; barkey=0; barlist.NormalGraphic++;}//grind->tap
+2560: }//End Grind
+2573: aSound58.Play(); baraction.NormalGraphic=7916; barint=0; barkey=0; barlist.NormalGraphic++;}//sweep->tamp
+2575: if ((baraction.Graphic>=7916)&&(baraction.Graphic<=7939)){//Tamp!
+2581: aSound58.Play(); baraction.NormalGraphic=7940; barint=0; barkey=0; barlist.NormalGraphic++;}//tamp->twist
+2582: }//End Tamp!
+2728: if ((mel_pickeduptoday==false)&&(hour>=17)&&(bmood.Text!=("Is Laura at home?"))){bmood.Text=("Is Laura at home?");}
+2729: if ((mel_pickeduptoday==true)&&(hour>=17)&&(bmood.Text!=("Laura is at home."))){bmood.Text=("Laura is at home.");}
+2732: if ((mel_lostcustody==true)&&(bmood.Text!=("Laura's with Seth, now."))){bmood.Text=("Laura's with Seth, now.");}
+2733: if (mel_lostcustody==false){
+2734: if ((mel_pickeduptoday==false)&&(hour>=8)&&(hour<17)&&(bmood.Text!=("Laura's at school."))){bmood.Text=("Laura's at school.");}
+2735: if ((mel_pickeduptoday==false)&&(hour>=17)&&(bmood.Text!=("Is Laura at home?"))){bmood.Text=("Is Laura at home?");}
+2736: if ((mel_pickeduptoday==true)&&(bmood.Text!=("Laura's at home."))){bmood.Text=("Laura's at home.");}
+2737: if ((mel_pickeduptoday==false)&&(hour<8)&&(bmood.Text!=("Laura's at home."))){bmood.Text=("Laura's at home.");}
+2945: if ((melplot==1)&&(GetGlobalInt(1)==2)&&(dayofweek>=1)&&(milhour==17)&&(mel_pickeduptoday==false)){//Mel didn't pick up Laura: BAD MOM
+2946: //Display("Declaring Melanie to be a bad mother by changing her global plot variable to a value of ninety nine.");
+2948: if ((melplot==1)&&(GetGlobalInt(1)==2)&&(dayofweek>=1)&&(milhour==17)&&(mel_pickeduptoday==true)){//Mel did pick up Laura: GUT MOM
+2949: //Display("Declaring Melanie to be a good mother and increasing her global plot variable to a value of two.");
+4114: if (GetGlobalInt(1) == 2) { // Player is Melanie!!
+4233: if ((player.Room==2)&&(milhour==7)){Laura.StopMoving(); Laura.ChangeRoom(2, 370, 194);}//Special Check for Laura in Mel's House
+4250: else if (player.IdleView!=81){StartAnimatingIfNotAnimating( 1, 1, 2 );}}//Melanie!
+4282: else if (player.IdleView!=81){StartAnimatingIfNotAnimating( 1, 0, 2 );}}//Melanie!
+4624: if ((dayofweek==3)&&(milhour==11)&&(minute>=30)&&(cellalarmed_custody==false)){//Wednesday, noon.
+4625: cellalarmed_custody=true;
+4635: if ((dayspassed==7)&&(milhour==11)&&(minute>=30)&&(cellalarmed_custody==false)){//Monday, noon.
+4636: cellalarmed_custody=true;
+5425: //if (GetGlobalInt(1) == 2){ // Melanie!
+5719: //Melanie as NPC
+5720: if (( ((Melanie.x - player.x) <= 60) && (Melanie.x - player.x) >= 0)&& (Melanie.Room==player.Room)&&(Melanie.View!=220)){//in Range
+5721: if (Melanie.View==294){}//She's an empty hut.
+5723: salebuyer=("Melanie"); customerlisten();
+6098: if (GetGlobalInt(1)==2){bonus_layover.NormalGraphic=5570; bonussed=1; Bonus();}//Melanie:Coffee
+6160: if (GetGlobalInt(1)==2){DisplayTopBar(50, 7, 8, "Where my girls at?","Laura: romm #%d, x=%d, y=%d",Laura.Room, Laura.x, Laura.y);}
+6161: DisplayTopBar(50, 7, 8, "Where is everybody?","Andrus: %d[Vinny: %d[Mel: %d[Logan: %d",Andrus.Room, Vinny.Room, Melanie.Room, Logan.Room);
+6239: SetGlobalInt(1, 2);//Change to Melanie, just in case. A debug-only concern, of course.
+6241: Wait(5); Laura.ChangeRoom(player.Room);
+6242: SaveGameSlot(2, "Melanie Autosave"); NewScores(1, 2);//Ooch.
+6246: approval_laura=5;
+6250: salebuyer=("Laura");
+6259: PCListen(); customerlisten(); dName.Text=("Laura"); dText.Text=("..."); Wait(40);
+6296: if (GetGlobalInt(1)==2){if(Stand.Room!=14){//Melanie -> Downtown
+6435: if (GetGlobalInt(1) == 2) {cMelanie.LockView (1); cMelanie.Animate(4, 2, eOnce, eNoBlock, eForwards);}//Melanie!
+6443: if (GetGlobalInt(1) == 2) {cMelanie.LockView (1); cMelanie.Animate(6, 2, eOnce, eBlock, eForwards); cMelanie.UnlockView();}//Melanie!
+6841: function Stamps_Look(){PlaySound(41); gItemDesc.BackgroundGraphic=4780;
+7370: if (gBuyItem.BackgroundGraphic==4780){// Buying Stamps
+7394: if (GetGlobalInt(1)==2){//Melanie!
+8618: function bStamps_Look(){PlaySound(41); buyblackout.Visible=false; buysticker.Visible=false;
+8811: int endstamp = Random(10);
+8813: if (endstamp==0){QuitScroll.NormalGraphic=4657;}
+8814: else if (endstamp==1){QuitScroll.NormalGraphic=4658;}
+8815: else if (endstamp==2){QuitScroll.NormalGraphic=4659;}
+8816: else if (endstamp==3){QuitScroll.NormalGraphic=4660;}
+8817: else if (endstamp==4){QuitScroll.NormalGraphic=4661;}
+8818: else if (endstamp==5){QuitScroll.NormalGraphic=4662;}
+8819: else if (endstamp==6){QuitScroll.NormalGraphic=4663;}
+8820: else if (endstamp==7){QuitScroll.NormalGraphic=4664;}
+8821: else if (endstamp==8){QuitScroll.NormalGraphic=4665;}
+8822: else if (endstamp==9){QuitScroll.NormalGraphic=4666;}
+8823: else if (endstamp==10){QuitScroll.NormalGraphic=4667;}
+8938: if (GetGlobalInt(1) == 2) {//Melanie!
+9043: if (StandImage.NormalGraphic!=4768){//This line indicates that the button should have been replaced by the "relocate stand" button for Melanie.
+9183: }}//End Melanie
+9357: PlaySound(39); TopUp("Under Construction","These options are being constructed.");}//Melanie!
+10575: if (GetGlobalInt(1)==2){//Melanie Drinks
+10597: PCListen(); customerlisten(); fmu_text.Text=("...!"); fmu_speaker.Text=("Melanie: "); fmu1.Animate(24, 6, 3, eRepeat); blab1();//Mel: "!!!"
+10598: fmu1.Animate(24, 5, 3, eRepeat); customerlisten(); fmu_text.Text=("Pfff! Hahahaha!"); fmu_speaker.Text=("Melanie: "); blab1();
+10608: PCListen(); customerlisten(); fmu_text.Text=("...!"); fmu_speaker.Text=("Melanie: "); fmu1.Animate(24, 6, 3, eRepeat); blab1();//Mel: "!!!"
+10609: fmu1.Animate(24, 5, 3, eRepeat); customerlisten(); fmu_text.Text=("Pfff!"); fmu_speaker.Text=("Melanie: "); blab1();
+10616: PCListen(); customerlisten(); fmu_text.Text=("...!"); fmu_speaker.Text=("Melanie: "); fmu1.Animate(24, 6, 3, eRepeat); blab1();//Mel: "!!!"
+10617: fmu1.Animate(24, 5, 3, eRepeat); customerlisten(); fmu_text.Text=("Pfff!"); fmu_speaker.Text=("Melanie: "); blab1();
+10789: if (GetGlobalInt(1)==2){//Melanie
+11190: if (GetGlobalInt(1)==2){player.ChangeRoom(38, 40, 160);Mouse.Visible=false;Warp.Visible=false;}//School->Melanie
+11579: int stampspawned=0;
