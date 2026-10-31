@@ -1,0 +1,26 @@
+name: Midterm nicoh-yay
+on:
+  pull_request:
+    paths:
+      - 'midterms/nicoh-yay/**'
+      - '.github/workflows/midterm-nicoh-yay.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: midterms/nicoh-yay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: midterms/nicoh-yay/package-lock.json
+      - run: npm ci
+      # Bundled real-engine WASM: invariants, legal/illegal, terminal,
+      # observed regressions, hidden information, and episode limits; no emsdk.
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build

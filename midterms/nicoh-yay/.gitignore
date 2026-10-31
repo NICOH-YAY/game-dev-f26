@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.npm-cache/
+.npm-cache/
+
+eval/traces/
+
+engine/build/*.log
+
+engine/build/test-engine.*
+
+engine/build/reference-engine.*
+
+engine/build/previous-engine.*
+
+# Reproducible local baseline traces, maps and development trials.
+eval/diagnostics/
+
+__pycache__/
+*.pyc

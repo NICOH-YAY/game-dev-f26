@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-31",
+  "runId": "2026-10-31T06-19-01-385Z",
+  "report": "eval/results/2026-10-31-2026-10-31T06-19-01-385Z-results.json",
+  "samples": [
+    {
+      "path": "eval/traces-sample/baseline-success.jsonl.gz",
+      "sha256": "83f25608218121c312d89858bec362ab8782652231078d4317301ce01d08cd17",
+      "source": "eval/traces/2026-10-31T06-16-26-402Z-baseline_aggressive-E1M1-17.jsonl.gz",
+      "player": "baseline_aggressive",
+      "level": "E1M1",
+      "seed": 17,
+      "reason": "exit",
+      "runId": "2026-10-31T06-16-26-402Z",
+      "report": "eval/results/2026-10-31-2026-10-31T06-16-26-402Z-results.json"
+    },
+    {
+      "path": "eval/traces-sample/baseline-death.jsonl.gz",
+      "sha256": "b6011f85561ff97a1aaa09de46e58169f97aebe7a7eff0fc0d41fa63706036ae",
+      "source": "eval/traces/2026-10-31T06-16-26-402Z-baseline_aggressive-E1M2-17.jsonl.gz",
+      "player": "baseline_aggressive",
+      "level": "E1M2",
+      "seed": 17,
+      "reason": "dead",
+      "runId": "2026-10-31T06-16-26-402Z",
+      "report": "eval/results/2026-10-31-2026-10-31T06-16-26-402Z-results.json"
+    },
+    {
+      "path": "eval/traces-sample/baseline-limit.jsonl.gz",
+      "sha256": "36c00f4169b5d991cede5ce8be63887bbae19e39ff3607bce32df52ef9342cff",
+      "source": "eval/traces/2026-10-31T06-16-26-402Z-baseline_aggressive-E1M2-83.jsonl.gz",
+      "player": "baseline_aggressive",
+      "level": "E1M2",
+      "seed": 83,
+      "reason": "step_limit",
+      "runId": "2026-10-31T06-16-26-402Z",
+      "report": "eval/results/2026-10-31-2026-10-31T06-16-26-402Z-results.json"
+    },
+    {
+      "path": "eval/traces-sample/model-history-E1M1-17.jsonl.gz",
+      "sha256": "d8ef5acf3bc513604d2722639b9a5deda2bdd31ca0c4e3d38e9456873f8d1c0d",
+      "source": "eval/traces/2026-10-31T06-19-01-385Z-model-history-E1M1-17.jsonl.gz",
+      "player": "model-history",
+      "level": "E1M1",
+      "seed": 17,
+      "reason": "timeout",
+      "runId": "2026-10-31T06-19-01-385Z",
+      "report": "eval/results/2026-10-31-2026-10-31T06-19-01-385Z-results.json"
+    },
+    {
+      "path": "eval/traces-sample/model-obs-only-E1M1-17.jsonl.gz",
+      "sha256": "04dd986103a68dfc2b0a1e30c38dc02cdd0178592be77c7237471145b8979847",
+      "source": "eval/traces/2026-10-31T06-19-01-385Z-model-obs-only-E1M1-17.jsonl.gz",
+      "player": "model-obs-only",
+      "level": "E1M1",
+      "seed": 17,
+      "reason": "timeout",
+      "runId": "2026-10-31T06-19-01-385Z",
+      "report": "eval/results/2026-10-31-2026-10-31T06-19-01-385Z-results.json"
+    }
+  ]
+}
