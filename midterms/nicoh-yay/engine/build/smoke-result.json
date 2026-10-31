@@ -1,0 +1,11 @@
+{
+  "scope": "stationary E1M1, after tic35; excludes Canvas/audio/layout",
+  "rendererMeanMs": 0.1931011450381904,
+  "rendererP95Ms": 0.2745999999988271,
+  "frames": 524,
+  "framesBetweenTics": 211,
+  "nonzero": true,
+  "elapsedMs": 10034.4434,
+  "meanIntervalMs": 17.16376252390057,
+  "p95IntervalMs": 31.061100000000124
+}
